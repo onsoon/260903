@@ -1,0 +1,6 @@
+{
+  "name": "부산광역시 환경 모니터링 시스템",
+  "description": "실시간 대기질 데이터 수집 및 Gemini AI 기반 공공행정 의사결정 보고서 기안 지원 시스템",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
