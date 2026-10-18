@@ -85,6 +85,7 @@ section.panel { display: grid; gap: 16px; }
 .checks label { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); cursor: pointer; background: var(--surface); }
 .checks input { width: 20px; height: 20px; margin-top: 2px; accent-color: var(--blue); flex: none; }
 .checks small { display: block; color: var(--muted); }
+.opts label.off { opacity: .45; cursor: not-allowed; }
 .pledge-done { text-align: center; padding: 16px; border-radius: 14px; background: var(--green-soft); font-family: var(--display); font-size: 20px; }
 
 /* 단계 */
@@ -209,6 +210,22 @@ const PLEDGE = [
   ["불편하거나 이상한 답변은 선생님께 알려요.", "캡처해 두고 선생님이나 운영진에게"],
 ];
 
+// 안전 약속을 그림으로: 약속마다 장면과 짧은 문구
+const ART = {
+  scene: [
+    "고등학생이 노트북 앞에서 이름표와 전화번호가 적힌 카드를 자물쇠 달린 보물상자에 넣고, 옆에서 AI 로봇 튜터가 엄지를 치켜세우는 장면",
+    "고등학생이 AI의 답변 말풍선과 펼친 교과서를 나란히 놓고 큰 돋보기로 두 내용을 비교하는 장면",
+    "고등학생이 발표 화면 속 그림 아래에 ‘AI 생성 이미지’라고 적힌 꼬리표를 붙이고, AI 로봇 튜터가 박수 치는 장면",
+    "AI 로봇 튜터가 건넨 초안 종이에 고등학생이 빨간 펜으로 줄을 긋고 자기 생각을 덧붙여 고쳐 쓰는 장면",
+    "화면에 물음표 구름 같은 이상한 답변이 뜨자 고등학생이 손을 들어 선생님께 알리는 장면",
+  ],
+  short: ["내 정보는 내가 지켜요", "AI 답도 한 번 더 확인!", "출처는 꼭 밝혀요", "내 생각으로 고쳐 써요", "이상하면 선생님께!"],
+  styles: ["밝은 웹툰 스타일", "귀여운 3D 캐릭터 스타일", "부드러운 수채화 일러스트", "레트로 픽셀아트", "깔끔한 플랫 일러스트 포스터"],
+  moods: ["밝고 따뜻한", "활기차고 유쾌한", "차분하고 믿음직한"],
+  layouts: ["가로 16:9 (발표 슬라이드용)", "세로 3:4 (학급 게시판 포스터)", "정사각형 1:1 (카드뉴스)"],
+  after: ["손가락, 얼굴, 글자가 이상하게 그려진 곳은 없나요?", "그림만 보고도 약속의 뜻이 전해지나요?", "그림을 쓸 때 ‘AI 생성 이미지(BeAT)’라고 표시했나요?", "친구나 내 얼굴 사진을 올려서 만들지 않았나요?"],
+};
+
 const STEPS = [
   { t: "주소창에 BeAT 주소 입력하기", s: `<span class="url">${BEAT_URL}</span> · 리플릿의 QR 코드로도 들어갈 수 있어요.` },
   { t: "학교에서 안내받은 계정으로 로그인하기", s: "로그인 방식과 아이디는 선생님 안내를 따르세요. 비밀번호는 친구에게 알려 주지 않아요." },
@@ -296,7 +313,7 @@ const BAD_GOOD = [
 
 const TABS = [
   { id: "quiz", n: "1", label: "윤리 퀴즈", time: "8분" },
-  { id: "pledge", n: "2", label: "안전 약속", time: "2분" },
+  { id: "pledge", n: "2", label: "안전 약속", time: "2분 (그림 만들기 +5분)" },
   { id: "login", n: "3", label: "접속하기", time: "7분" },
   { id: "build", n: "4", label: "질문 만들기", time: "5분" },
   { id: "mission", n: "5", label: "메뉴별 실습", time: "13분" },
@@ -311,6 +328,7 @@ const state = {
   quiz: load("quiz", {}),       // index -> picked boolean
   qi: load("qi", 0),
   pledge: load("pledge", []),
+  art: load("art", { picks: [], style: 0, mood: 0, layout: 1, text: false, after: [] }),
   login: load("login", []),
   build: load("build", { subject: "수학", role: "친절한 과외 선생님", ctx: "나는 고등학교 1학년이고, 이 부분이 헷갈려.", ask: "", fmt: ["단계별로"], cond: ["정답은 바로 말하지 말기"] }),
   facts: load("facts", {}),
@@ -389,7 +407,8 @@ const views = {
       <ul class="checks">${PLEDGE.map(([t, s], k) => `
         <li><label><input type="checkbox" data-pledge="${k}" ${state.pledge.includes(k) ? "checked" : ""}><span>${t}<small>${s}</small></span></label></li>`).join("")}
       </ul>
-      ${all ? `<div class="pledge-done">약속 완료! 이제 BeAT에 접속해 볼까요?</div><div class="row"><button class="btn primary" data-go="login">접속하기로</button></div>` : ""}`;
+      ${all ? `<div class="pledge-done">약속 완료! 이제 BeAT에 접속해 볼까요?</div><div class="row"><button class="btn primary" data-go="login">접속하기로</button></div>` : ""}
+      ${artBox()}`;
   },
 
   login() {
@@ -565,6 +584,56 @@ function showPeek(key) {
   if (d) { d.open = true; d.scrollIntoView({ block: "center" }); }
 }
 
+function artPicks() {
+  const picks = state.art.picks.filter(k => state.pledge.includes(k)).sort();
+  return picks.length ? picks : [...state.pledge].sort();
+}
+function artPrompt() {
+  const a = state.art, picks = artPicks();
+  if (!picks.length) return "";
+  const lines = [];
+  if (picks.length === 1) {
+    lines.push(`${ART.styles[a.style]}로 그림을 그려 줘.`, `주제: BeAT 안전 사용 약속 ‘${PLEDGE[picks[0]][0]}’`, `장면: ${ART.scene[picks[0]]}`);
+  } else {
+    lines.push(`${ART.styles[a.style]}로 ${picks.length}컷 만화를 그려 줘. 컷마다 BeAT 안전 사용 약속을 하나씩 보여 줘.`);
+    picks.forEach((k, i) => lines.push(`${i + 1}컷 (${ART.short[k]}): ${ART.scene[k]}`));
+  }
+  lines.push(
+    "등장인물: 교복을 입은 한국 고등학생(실제 인물이 아닌 캐릭터)과 친근한 파란색 AI 로봇 튜터 ‘비트’",
+    `분위기: ${ART.moods[a.mood]} 느낌`,
+    `화면 비율: ${ART.layouts[a.layout]}`,
+    "색감: 파란색과 분홍색 포인트, 깔끔한 흰 배경",
+    a.text
+      ? (picks.length === 1 ? `글자: 그림 위쪽에 ‘${ART.short[picks[0]]}’라는 짧은 한글 문구를 넣어 줘.` : `글자: 컷마다 아래쪽에 짧은 한글 문구를 넣어 줘. (${picks.map(k => ART.short[k]).join(" / ")})`)
+      : "글자: 그림 안에는 글자를 넣지 마. 문구는 내가 나중에 직접 넣을게.",
+    "조건: 실제 사람 얼굴, 연예인, 유명 만화 캐릭터는 쓰지 마. 학교 게시판에 붙일 수 있게 밝고 안전한 그림으로 그려 줘.");
+  return lines.join("\n");
+}
+function artBox() {
+  const a = state.art;
+  if (!state.pledge.length) return `<div class="box"><h3>약속을 그림으로 만들어 볼까요?</h3><p class="lede">위에서 약속을 하나 이상 체크하면 이미지 생성 프롬프트를 만들 수 있어요.</p></div>`;
+  const picks = artPicks();
+  const radio = (name, list, cur) => `<div class="opts">${list.map((o, k) => `<label><input type="radio" name="${name}" data-art="${name}" value="${k}" ${k === cur ? "checked" : ""}>${o}</label>`).join("")}</div>`;
+  return `<div class="box art">
+    <h3>약속을 그림으로: 이미지 생성 프롬프트 만들기</h3>
+    <p class="lede" style="font-size:14px">체크한 약속으로 학급 게시판 포스터나 컷 만화를 만들어요. 약속 하나를 고르면 한 장면, 여러 개를 고르면 컷 만화가 돼요.</p>
+    <div class="field"><span>1. 그림에 담을 약속 (체크한 약속만 고를 수 있어요)</span>
+      <div class="opts">${PLEDGE.map(([t], k) => `<label class="${state.pledge.includes(k) ? "" : "off"}"><input type="checkbox" data-artpick="${k}" ${state.pledge.includes(k) ? "" : "disabled"} ${picks.includes(k) && state.pledge.includes(k) ? "checked" : ""}>${ART.short[k]}</label>`).join("")}</div></div>
+    <div class="field"><span>2. 그림 스타일</span>${radio("style", ART.styles, a.style)}</div>
+    <div class="field"><span>3. 분위기</span>${radio("mood", ART.moods, a.mood)}</div>
+    <div class="field"><span>4. 화면 비율</span>${radio("layout", ART.layouts, a.layout)}</div>
+    <label class="row" style="font-size:14px;cursor:pointer"><input type="checkbox" id="art-text" ${a.text ? "checked" : ""} style="accent-color:var(--blue)"> 그림 안에 짧은 한글 문구 넣기</label>
+    <small style="color:var(--muted)">AI 이미지는 한글 글자가 깨질 때가 많아요. 깨지면 글자 없이 다시 만들고, 문구는 발표 자료에서 직접 넣으세요.</small>
+    <h3 style="margin-top:4px">완성된 프롬프트 <span class="tag">${picks.length === 1 ? "한 장면" : picks.length + "컷 만화"}</span></h3>
+    <div class="preview" id="artPreview">${esc(artPrompt())}</div>
+    <div class="row"><button class="btn primary" id="copyArt">프롬프트 복사</button><a class="btn" href="${BEAT_URL}" target="_blank" rel="noopener" style="text-decoration:none">BeAT 열기</a></div>
+    <small style="color:var(--muted)">BeAT 개인GPT에 붙여 넣어 이미지를 만들어요. 이미지 생성이 되는 메뉴는 선생님 안내를 따르세요.</small>
+    <div class="fact"><b style="font-size:14px">그림을 받은 다음 확인하기</b>${ART.after.map((c, k) => `
+      <label><input type="checkbox" data-artafter="${k}" ${a.after.includes(k) ? "checked" : ""}>${c}</label>`).join("")}</div>
+  </div>`;
+}
+function saveArt(full) { save("art", state.art); if (full) return render(); const el = document.getElementById("artPreview"); if (el) el.textContent = artPrompt(); }
+
 function builtPrompt() {
   const b = state.build;
   const lines = [];
@@ -592,7 +661,7 @@ function render() {
 function go(tab) { state.tab = tab; save("tab", tab); render(); window.scrollTo({ top: 0 }); }
 
 document.addEventListener("click", e => {
-  const t = e.target.closest("[data-tab],[data-go],[data-ox],[data-qnav],[data-copy],[data-menu],[data-reset],[data-dl],[data-copyfile],[data-preset],#copyBuilt,#copyReview");
+  const t = e.target.closest("[data-tab],[data-go],[data-ox],[data-qnav],[data-copy],[data-menu],[data-reset],[data-dl],[data-copyfile],[data-preset],#copyBuilt,#copyReview,#copyArt");
   if (!t) return;
   if (t.dataset.tab) return go(t.dataset.tab);
   if (t.dataset.go) return go(t.dataset.go);
@@ -605,6 +674,7 @@ document.addEventListener("click", e => {
   if (t.dataset.preset !== undefined) { state.build = JSON.parse(JSON.stringify(PRESETS[+t.dataset.preset].b)); save("build", state.build); return render(); }
   if (t.dataset.copy) return copy(t.dataset.copy);
   if (t.id === "copyBuilt") return copy(builtPrompt());
+  if (t.id === "copyArt") return copy(artPrompt());
   if (t.id === "copyReview") {
     const r = state.review;
     return copy(`[BeAT 1차시 돌아보기]\n1. 확인이 필요했던 부분: ${r.q1}\n2. 가장 필요한 약속: ${r.q2}\n3. 다음에 해 볼 것: ${r.q3}`);
@@ -617,6 +687,19 @@ document.addEventListener("change", e => {
     const k = +t.dataset.pledge;
     state.pledge = t.checked ? [...new Set([...state.pledge, k])] : state.pledge.filter(x => x !== k);
     save("pledge", state.pledge); return render();
+  }
+  if (t.dataset.artpick !== undefined) {
+    const k = +t.dataset.artpick, cur = artPicks();
+    state.art.picks = t.checked ? [...new Set([...cur, k])] : cur.filter(x => x !== k);
+    if (!state.art.picks.length) { t.checked = true; state.art.picks = [k]; return toast("약속을 하나 이상 골라 주세요."); }
+    return saveArt(true);
+  }
+  if (t.dataset.art) { state.art[t.dataset.art] = +t.value; return saveArt(false); }
+  if (t.id === "art-text") { state.art.text = t.checked; return saveArt(false); }
+  if (t.dataset.artafter !== undefined) {
+    const k = +t.dataset.artafter;
+    state.art.after = t.checked ? [...new Set([...state.art.after, k])] : state.art.after.filter(x => x !== k);
+    return saveArt(false);
   }
   if (t.dataset.login !== undefined) {
     const k = +t.dataset.login;

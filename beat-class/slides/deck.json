@@ -1,21 +1,69 @@
 {
   "v": 4,
-  "createdOnFiles": { "v": 1, "at": "2026-10-18T13:00:00Z" },
+  "createdOnFiles": {
+    "v": 1,
+    "at": "2026-10-18T13:00:00Z"
+  },
   "lists": "css",
   "title": "BeAT 첫 수업",
   "cover": "cover",
-  "order": ["cover", "flow", "hook", "ethics", "quiz", "hallu", "pledge", "intro", "login", "menus", "formula", "rewrite", "site", "m-class", "m-personal", "m-agents", "m-custom", "review", "next"],
+  "order": [
+    "cover",
+    "flow",
+    "hook",
+    "ethics",
+    "quiz",
+    "hallu",
+    "pledge",
+    "pledge-art",
+    "intro",
+    "login",
+    "menus",
+    "formula",
+    "rewrite",
+    "site",
+    "m-class",
+    "m-personal",
+    "m-agents",
+    "m-custom",
+    "review",
+    "next"
+  ],
   "sections": {
-    "s1": { "description": "도입: 오늘의 흐름과 공감 질문", "start": "cover" },
-    "s2": { "description": "AI 윤리: 상황 퀴즈, 할루시네이션, BeAT 안전 사용 약속", "start": "ethics" },
-    "s3": { "description": "BeAT 만나기: 소개, 접속·로그인, 메뉴 4개", "start": "intro" },
-    "s4": { "description": "질문 잘하기: 프롬프트 공식과 고쳐 쓰기", "start": "formula" },
-    "s5": { "description": "메뉴별 실습: 수업GPT, 개인GPT, AI Agents, Custom AI", "start": "site" },
-    "s6": { "description": "정리: 돌아보기와 다음 프로그램", "start": "review" }
+    "s1": {
+      "description": "도입: 오늘의 흐름과 공감 질문",
+      "start": "cover"
+    },
+    "s2": {
+      "description": "AI 윤리: 상황 퀴즈, 할루시네이션, BeAT 안전 사용 약속, 약속 포스터 만들기",
+      "start": "ethics"
+    },
+    "s3": {
+      "description": "BeAT 만나기: 소개, 접속·로그인, 메뉴 4개",
+      "start": "intro"
+    },
+    "s4": {
+      "description": "질문 잘하기: 프롬프트 공식과 고쳐 쓰기",
+      "start": "formula"
+    },
+    "s5": {
+      "description": "메뉴별 실습: 수업GPT, 개인GPT, AI Agents, Custom AI",
+      "start": "site"
+    },
+    "s6": {
+      "description": "정리: 돌아보기와 다음 프로그램",
+      "start": "review"
+    }
   },
   "faces": {
-    "jua": { "family": "Jua", "href": "https://fonts.googleapis.com/css2?family=Jua&display=swap" },
-    "noto-sans-kr": { "family": "Noto Sans KR", "href": "https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" }
+    "jua": {
+      "family": "Jua",
+      "href": "https://fonts.googleapis.com/css2?family=Jua&display=swap"
+    },
+    "noto-sans-kr": {
+      "family": "Noto Sans KR",
+      "href": "https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap"
+    }
   },
   "designSystems": []
 }
