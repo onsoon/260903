@@ -8,6 +8,6 @@ The problem is that school still starts early. When students go to bed late and 
 Experts suggest a few simple habits: keep a regular sleep schedule, even on weekends, and put screens away before bed, because bright light in the evening can delay melatonin even more.
 
 [번역 연습 과제]
-1. Custom AI의 번역 도구로 위 지문을 번역해 보세요.
+1. Custom AI → 문서번역에 ‘CustomAI_영어지문_번역연습.docx’를 올려 번역해 보세요. (번역하기 전에 첫 문단은 내가 먼저 해석!)
 2. 원문과 번역문을 한 문장씩 비교해서, 어색하거나 뜻이 달라진 문장을 하나 찾아보세요.
 3. 지문의 핵심 단어 3개(예: circadian rhythm)를 골라 뜻을 정리하세요.

@@ -145,7 +145,7 @@ with open(OUT / "AIAgents_가상설문_스마트폰과수면.csv", "w", newline=
     w.writerows(rows)
 
 # ---------- 5. Custom AI: 자기소개 초안 ----------
-(OUT / "CustomAI_자기소개_초안_예시.txt").write_text("""[자기소개 초안 예시] 학생 A (가상 인물)
+(OUT / "CustomAI_자기소개_초안_예시.txt").write_text("""[자기소개 초안 예시] 학생 A (가상 인물) · 문항 1에 대한 초안
 BeAT 1차시 실습용 예시 자료 · 실제 학생의 글이 아닙니다. 피드백 연습용으로 일부러 아쉬운 점을 넣었습니다.
 
 저는 어릴 때부터 성실하고 책임감이 강한 학생입니다. 고등학교에 들어와서 다양한 활동을 하며 많은 것을 배웠습니다. 특히 과학 동아리에서 친구들과 함께 활동하면서 협동심의 중요성을 느꼈습니다. 동아리에서는 학교 주변 미세먼지를 측정하는 간이 측정기를 만들었는데, 처음에는 값이 너무 들쭉날쭉해서 센서 위치를 세 번이나 바꿔야 했습니다. 이 경험을 통해 저는 포기하지 않는 끈기를 배웠습니다. 저는 앞으로도 열심히 노력하여 꼭 꿈을 이루는 사람이 되겠습니다.
@@ -167,9 +167,43 @@ The problem is that school still starts early. When students go to bed late and 
 Experts suggest a few simple habits: keep a regular sleep schedule, even on weekends, and put screens away before bed, because bright light in the evening can delay melatonin even more.
 
 [번역 연습 과제]
-1. Custom AI의 번역 도구로 위 지문을 번역해 보세요.
+1. Custom AI → 문서번역에 ‘CustomAI_영어지문_번역연습.docx’를 올려 번역해 보세요. (번역하기 전에 첫 문단은 내가 먼저 해석!)
 2. 원문과 번역문을 한 문장씩 비교해서, 어색하거나 뜻이 달라진 문장을 하나 찾아보세요.
 3. 지문의 핵심 단어 3개(예: circadian rhythm)를 골라 뜻을 정리하세요.
 """, encoding="utf-8")
+
+# ---------- 7. Custom AI 자기소개 멘토링: 서식 파일과 작성 가이드 ----------
+FORM_TITLE = "[자기소개 서식 예시] 자기소개 멘토링 실습용"
+FORM = [
+    ("p", "자기소개 멘토링 1단계(기본 정보)에서 서식 파일로 올리면, AI가 아래 문항을 뽑아 2단계 ‘문항’ 칸에 넣어 줍니다."),
+    ("h", "문항 1"),
+    ("p", "고등학교 생활 중 스스로 궁금해서 탐구하거나 끝까지 노력했던 경험을 쓰고, 그 과정에서 배우고 느낀 점을 기술해 주세요. (띄어쓰기 포함 1,000자 이내)"),
+    ("h", "문항 2 (면접용 1분 자기소개)"),
+    ("p", "나를 한 문장으로 소개하고, 그렇게 말할 수 있는 이유가 되는 경험 하나를 말해 주세요. (띄어쓰기 포함 300자 이내)"),
+]
+make_docx(OUT / "CustomAI_자기소개_서식_예시.docx", FORM_TITLE, FORM, FOOT)
+
+(OUT / "CustomAI_자기소개_작성가이드.txt").write_text("""[자기소개 작성 가이드] 자기소개 멘토링 실습용
+BeAT 1차시 실습용 예시 자료 · 1단계(기본 정보)에서 가이드 파일로 올리거나, 2단계 Reference 칸에 붙여 넣어 쓰세요.
+
+1. 첫 문장에 나를 보여 주는 구체적인 장면이나 경험을 쓴다.
+2. ‘성실하다’, ‘책임감이 강하다’ 같은 말 대신 그것이 드러나는 행동을 쓴다.
+3. 경험 → 어려웠던 점 → 내가 한 일 → 배운 점 순서로 쓴다.
+4. 기간, 횟수, 결과처럼 확인할 수 있는 사실을 넣는다.
+5. 다른 사람이 대신 쓴 글이 아니라 내 말투로 쓴다. 이름, 학교 이름, 연락처는 쓰지 않는다.
+
+[사례 비교]
+아쉬운 문장: 저는 과학 동아리 활동을 통해 끈기를 배웠습니다.
+좋은 문장: 간이 미세먼지 측정기의 값이 들쭉날쭉해서 센서 위치를 세 번 옮겼고, 세 번째에야 바람이 직접 닿지 않는 곳에서 값이 안정된다는 것을 알게 되었습니다.
+""", encoding="utf-8")
+
+# ---------- 8. Custom AI 문서번역: 원문만 담은 Word 파일 ----------
+ENG_TITLE = "Why Are Teenagers So Sleepy in the Morning?"
+ENG = [
+    ("p", "Many teenagers find it hard to fall asleep before midnight and even harder to get up for school. This is not simply laziness. During adolescence, the body's internal clock, often called the circadian rhythm, shifts later. The brain starts releasing melatonin, a hormone that makes us feel sleepy, later in the evening than it did in childhood. As a result, a teenager may not feel tired until late at night."),
+    ("p", "The problem is that school still starts early. When students go to bed late and wake up early, they lose hours of sleep every week. Lack of sleep can make it harder to concentrate, remember new information, and control emotions."),
+    ("p", "Experts suggest a few simple habits: keep a regular sleep schedule, even on weekends, and put screens away before bed, because bright light in the evening can delay melatonin even more."),
+]
+make_docx(OUT / "CustomAI_영어지문_번역연습.docx", ENG_TITLE, ENG, "Practice passage written for the BeAT class (예시 자료).")
 
 print("\n".join(sorted(p.name for p in OUT.iterdir())))

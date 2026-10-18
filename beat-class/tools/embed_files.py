@@ -20,6 +20,9 @@ FILES = {
     "csv": ("AIAgents_가상설문_스마트폰과수면.csv", None),
     "intro": ("CustomAI_자기소개_초안_예시.txt", None),
     "eng": ("CustomAI_영어지문_번역연습.txt", None),
+    "eng_docx": ("CustomAI_영어지문_번역연습.docx", "eng"),
+    "form_docx": ("CustomAI_자기소개_서식_예시.docx", None),
+    "guide": ("CustomAI_자기소개_작성가이드.txt", None),
 }
 
 def size(n):
