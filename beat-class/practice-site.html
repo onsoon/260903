@@ -145,6 +145,23 @@ details summary { cursor: pointer; color: var(--muted); font-size: 14px; }
 .fname { flex: 1; min-width: 0; overflow-wrap: anywhere; font-size: 14px; }
 .fsize { font-size: 12px; color: var(--muted); flex: none; font-variant-numeric: tabular-nums; }
 .peek pre { white-space: pre-wrap; font-family: var(--body); font-size: 13px; max-height: 260px; overflow: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px; margin: 6px 0; }
+/* Agent 새로 만들기 입력 예시 */
+.ag-form { border: 1px solid var(--line); border-radius: 14px; background: var(--surface); padding: 14px; display: grid; gap: 10px; }
+.ag-title { font-weight: 700; font-size: 16px; }
+.ag-title small { font-weight: 400; color: var(--muted); font-size: 12px; }
+.ag-sec { background: var(--blue-soft); color: var(--blue); text-align: center; border-radius: 6px; padding: 4px; font-size: 13px; font-weight: 700; }
+.ag-row { display: grid; grid-template-columns: 112px 1fr; gap: 10px; align-items: start; }
+@media (max-width: 520px) { .ag-row { grid-template-columns: 1fr; gap: 4px; } }
+.ag-label { font-size: 13px; font-weight: 700; padding-top: 8px; }
+.ag-label .req { color: var(--pink); }
+.ag-val { border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; font-size: 14px; display: flex; gap: 8px; align-items: flex-start; justify-content: space-between; min-width: 0; background: var(--bg); }
+.ag-val > span, .ag-val > pre, .ag-val > ul { flex: 1; min-width: 0; }
+.ag-pre { white-space: pre-wrap; font-family: var(--body); font-size: 13.5px; margin: 0; line-height: 1.55; }
+.ag-starts { margin: 0; padding-left: 18px; }
+.ag-copy { flex: none; padding: 4px 10px; font-size: 13px; }
+.ag-note { color: var(--muted); font-size: 12.5px; }
+.ag-val small.ok { color: var(--green); }
+.ag-val small.over { color: var(--pink); font-weight: 700; }
 /* BeAT 화면을 본뜬 메뉴 막대 */
 .beat-bar { display: flex; align-items: center; gap: 16px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 4px 14px; overflow-x: auto; }
 .beat-logo { font-family: var(--body); font-weight: 700; font-size: 22px; letter-spacing: -.02em; flex: none; }
@@ -237,7 +254,7 @@ const STEPS = [
 const SPACES = [
   ["수업GPT", "선생님이 올린 교과서, 학습지, 해설지를 바탕으로 질문해요. 왼쪽 카테고리에서 우리 선생님 폴더를 골라요."],
   ["개인GPT", "궁금한 걸 자유롭게 묻고, 내 자료(문서·이미지)를 올려 요약·설명을 받는 나만의 학습 도우미예요."],
-  ["AI Agents", "발표, 수행평가, 진로 탐색처럼 목적에 맞게 만들어진 도우미를 골라 써요. 직접 만들 수도 있어요."],
+  ["AI Agents", "학교 Agent, 공유 Agent 중 목적에 맞는 도우미를 골라 쓰고, ‘나의 Agent’로 직접 만들 수도 있어요."],
   ["Custom AI", "번역, 수업 기록·요약, 자기소개 피드백처럼 특정 활동에 맞춘 도구예요."],
 ];
 
@@ -269,16 +286,18 @@ const MISSIONS = [
       check: ["AI에게 묻기 전에 내 요약을 먼저 썼나요?", "AI가 짚은 부분을 지문에서 직접 찾았나요?", "O/X 정답의 근거를 지문 문장으로 말할 수 있나요?"] },
   ] },
   { menu: "AI Agents", items: [
-    { pain: "‘너 꿈이 뭐야?’라는 질문이 제일 어렵다면", title: "좋아하는 것에서 시작하는 진로·학과 탐색",
-      path: ["AI Agents", "진로·진학 관련 Agent 찾기 (없으면 개인GPT)", "대화 시작"],
+    { pain: "고교학점제 과목 선택, 뭘 골라야 할지 모르겠다면", title: "학교·공유 Agent로 과목 선택 상담하기",
+      path: ["AI Agents", "왼쪽 Agent 목록", "학교 Agent 또는 공유 Agent", "과목 선택·진로 도우미 고르기"],
       files: [],
-      prompt: "나는 [좋아하는 것, 예: 영상 편집]에 관심이 많은 고등학생이야.\n관련 대학 학과 3개를 표로 정리해 줘. 칸은 ‘학과 / 배우는 것 / 고등학교 때 해 볼 수 있는 활동’으로 해 줘.\n확실하지 않은 정보는 ‘확인 필요’라고 표시해 줘.",
-      check: ["이름·학교·성적 같은 개인정보를 넣지 않았나요?", "‘확인 필요’ 정보를 대학 누리집에서 찾아봤나요?", "표에 내 생각을 한 줄 덧붙였나요?"] },
-    { pain: "수행평가 발표인데 데이터를 어떻게 읽어야 할지 막막하다면", title: "설문 데이터로 5분 발표 준비하기",
-      path: ["AI Agents", "발표·수행평가 관련 Agent 찾기 (없으면 개인GPT)", "CSV 파일 첨부"],
-      files: ["csv"],
-      prompt: "첨부한 파일은 고등학생 40명의 스마트폰 사용과 수면에 대한 가상 설문 데이터야. 이 데이터로 5분 발표를 준비하려고 해.\n1) 데이터에서 눈에 띄는 경향 3가지를 숫자와 함께 알려 줘.\n2) 발표 자료에 넣으면 좋은 그래프 2가지와 그 이유를 알려 줘.\n3) ‘상관관계’와 ‘인과관계’를 헷갈리지 않으려면 무엇을 조심해야 하는지 알려 줘.\n4) 친구들이 할 만한 예상 질문 3개를 내 줘.",
-      check: ["AI가 말한 숫자(평균 등) 하나 이상을 엑셀이나 계산기로 직접 확인했나요?", "‘스마트폰이 수면 부족의 원인이다’라고 단정하지 않았나요?", "발표에서 가상 데이터라는 것을 밝힐 건가요?"] },
+      note: "",
+      prompt: "나는 [관심 분야, 예: 생명과학·의료]에 관심이 있는 [1]학년이야.\n우리 학교 교육과정에서 2학년 때 들으면 좋을 선택 과목 3개를 이유와 함께 추천해 줘.\n과목마다 무엇을 배우는지, 어떤 진로와 연결되는지도 알려 줘.\n학교 교육과정 자료에서 확인되지 않는 내용은 ‘확인 필요’라고 표시해 줘.",
+      tip: "우리 학교 Agent가 없으면 공유 Agent 중 과목 선택·진로 관련 Agent를 고르세요. 대화 중에 다른 Agent로 바꾸려면 입력창 아래 ‘다른 Agent와 대화하기’를 누르면 돼요.",
+      check: ["추천 과목이 우리 학교 교육과정표에 실제로 있는지 확인했나요?", "이름·학교·성적 같은 개인정보를 넣지 않았나요?", "담임·진로 선생님께 여쭤볼 질문을 하나 적었나요?"] },
+    { pain: "매번 같은 부탁을 길게 쓰기 귀찮다면, 나만의 공부 도우미를 만들어요", title: "나의 Agent 만들기: 내 공부 스타일대로",
+      path: ["AI Agents", "Agent 새로 만들기", "칸 채우기", "미리보기로 시험", "저장"],
+      files: [],
+      builder: true,
+      check: ["미리보기에서 시작 프롬프트를 눌러 시험해 봤나요?", "일부러 틀린 답이나 엉뚱한 질문을 했을 때 정한 규칙대로 답하나요?", "공유 대상은 ‘나만’으로 두고 저장했나요? (공유는 선생님 확인 뒤에)", "Agent 설명이 200 Byte를 넘지 않나요?"] },
   ] },
   { menu: "Custom AI", items: [
     { pain: "자기소개서 첫 문장에서 30분째 멈춰 있다면", title: "자기소개 피드백 받기 (대신 써 주기 X)",
@@ -293,6 +312,31 @@ const MISSIONS = [
       prompt: "아래 영어 지문을 자연스러운 한국어로 번역해 줘.\n번역한 뒤 원문과 번역을 한 문장씩 나란히 표로 보여 주고,\n고등학생이 꼭 알아야 할 단어 5개를 뜻과 예문으로 정리해 줘.\n\n[영어 지문 붙여 넣기]",
       check: ["AI 번역을 보기 전에 첫 문단을 내가 먼저 해석해 봤나요?", "뜻이 어색하거나 달라진 문장을 하나 찾았나요?", "단어 뜻 하나 이상을 사전으로 확인했나요?"] },
   ] },
+];
+
+// 나의 Agent 만들기: BeAT ‘Agent 새로 만들기’ 화면의 칸 순서와 같게
+const AGENT_TPL = [
+  { label: "시험 대비 퀴즈 코치", cls: "학습 (목록에서 가장 가까운 것)", name: "통합과학 퀴즈 코치",
+    desc: "학습지 내용으로 한 문제씩 퀴즈를 내고 틀린 개념을 다시 설명해 주는 시험 대비 도우미",
+    prompt: "너는 고등학생의 시험 공부를 돕는 퀴즈 코치야.\n[진행 방법]\n1. 처음에 단원과 문제 수(기본 5문제)를 물어본다.\n2. 객관식, O/X, 단답형을 섞어 한 번에 한 문제씩 낸다.\n3. 학생이 답하면 맞았는지 알려 주고, 틀리면 정답을 바로 말하지 말고 힌트를 한 번 준다.\n4. 다 끝나면 맞힌 개수와 다시 볼 개념 2개를 정리한다.\n[지킬 것]\n- 학습 자료에 없는 내용은 문제로 내지 않고, 확실하지 않으면 ‘확인 필요’라고 말한다.\n- 학생의 이름, 학교, 전화번호 같은 개인정보를 묻지 않는다.\n- 친근한 존댓말로, 답변은 짧게 한다.",
+    starts: ["탄소 순환 단원으로 5문제 내 주세요", "제가 자주 틀리는 개념만 다시 물어봐 주세요", "O/X 문제로만 빠르게 10개!"],
+    setting: "Agent 설정에서 참고 문서를 올릴 수 있으면 ‘탄소 순환 학습지’를 등록하세요. 문제가 학습지 범위 안에서만 나와요.",
+    files: ["sci_docx"],
+    test: "시작 프롬프트를 누르고 일부러 틀린 답을 해 보세요. 정답 대신 힌트를 주면 성공!" },
+  { label: "영어 단어 짝꿍", cls: "학습 (목록에서 가장 가까운 것)", name: "영어 단어 짝꿍",
+    desc: "시험 범위 영어 단어를 뜻 맞히기와 예문 빈칸 채우기 게임으로 함께 외워 주는 도우미",
+    prompt: "너는 고등학생과 영어 단어를 함께 외우는 공부 짝꿍이야.\n[진행 방법]\n1. 학생이 외울 단어 목록을 보내면 단어 수를 확인한다.\n2. 한 번에 한 단어씩 ‘뜻 맞히기’ 또는 ‘예문 빈칸 채우기’ 문제를 낸다.\n3. 틀린 단어는 기억해 두었다가 마지막에 한 번 더 묻는다.\n4. 끝나면 틀린 단어와 외우기 쉬운 연상법을 표로 정리한다.\n[지킬 것]\n- 예문은 고등학교 수준의 쉬운 문장으로 만든다.\n- 뜻이 여러 개인 단어는 시험에 자주 나오는 뜻을 먼저 알려 준다.\n- 칭찬은 짧게, 문제는 빠르게 낸다.",
+    starts: ["단어 10개 보낼게요, 뜻 맞히기부터!", "틀린 단어만 다시 퀴즈 내 주세요", "오늘 외운 단어로 짧은 이야기 만들어 주세요"],
+    setting: "영어 지문 자료의 단어(circadian rhythm, melatonin 등)로 시험해 봐도 좋아요.",
+    files: ["eng"],
+    test: "단어 5개를 보내고 하나를 일부러 틀려 보세요. 마지막에 그 단어를 다시 물어보면 성공!" },
+  { label: "수행평가 발표 코치", cls: "진로·활동 (목록에서 가장 가까운 것)", name: "수행평가 발표 코치",
+    desc: "발표 자료와 데이터를 보고 발표 흐름, 예상 질문, 말하기 연습을 도와주는 발표 코치",
+    prompt: "너는 고등학생의 수행평가 발표를 도와주는 발표 코치야.\n[진행 방법]\n1. 먼저 발표 주제, 발표 시간, 듣는 사람을 물어본다.\n2. 학생이 자료나 데이터를 올리면 핵심 메시지 1개와 발표 흐름(도입-본론-마무리)을 제안한다.\n3. 데이터가 있으면 눈에 띄는 경향을 숫자와 함께 정리하되, 상관관계를 원인과 결과로 단정하지 않는다.\n4. 친구들이 할 만한 예상 질문 3개를 내고, 학생이 답하면 피드백한다.\n[지킬 것]\n- 발표 대본을 통째로 써 주지 않고, 학생이 직접 말할 수 있게 질문과 힌트로 돕는다.\n- 출처가 필요한 내용은 출처를 밝히라고 알려 준다.",
+    starts: ["설문 데이터로 5분 발표를 준비하고 있어요", "예상 질문 3개로 리허설해 주세요", "발표 첫 문장을 더 끌리게 고치고 싶어요"],
+    setting: "미리보기 대화에 ‘가상 설문 데이터(CSV)’를 첨부해서 시험해 보세요.",
+    files: ["csv"],
+    test: "“대본 다 써 줘”라고 부탁해 보세요. 대본 대신 질문과 힌트로 도와주면 성공!" },
 ];
 
 // 실습 자료: tools/embed_files.py 가 data/ 폴더 파일을 아래 자리에 넣는다
@@ -332,6 +376,7 @@ const state = {
   login: load("login", []),
   build: load("build", { subject: "수학", role: "친절한 과외 선생님", ctx: "나는 고등학교 1학년이고, 이 부분이 헷갈려.", ask: "", fmt: ["단계별로"], cond: ["정답은 바로 말하지 말기"] }),
   facts: load("facts", {}),
+  agentTpl: load("agentTpl", 0),
   menu: load("menu", 0),
   review: load("review", { q1: "", q2: "", q3: "" }),
 };
@@ -483,8 +528,10 @@ const views = {
         <div class="mission-head"><span class="lv">${m.menu} ${j + 1}</span><h3>${it.title}</h3>${m.must ? '<span class="tag">모두 하기</span>' : ""}${itemDone(i, j) ? '<span class="tag" style="background:var(--green-soft);color:var(--green)">완료</span>' : ""}</div>
         <ol class="path">${it.path.map(p => `<li>${p}</li>`).join("")}</ol>
         ${it.files.length ? fileBox(it.files, it.note) : ""}
+        ${it.builder ? agentBuilder() : `
         <div class="prompt-block">${esc(it.prompt).replace(/\[([^\]]+)\]/g, "<mark>[$1]</mark>")}</div>
-        <div class="row"><button class="btn primary" data-copy="${esc(it.prompt)}">프롬프트 복사</button><a class="btn" href="${BEAT_URL}" target="_blank" rel="noopener" style="text-decoration:none">BeAT 열기</a></div>
+        ${it.tip ? `<small style="color:var(--muted)">${it.tip}</small>` : ""}
+        <div class="row"><button class="btn primary" data-copy="${esc(it.prompt)}">프롬프트 복사</button><a class="btn" href="${BEAT_URL}" target="_blank" rel="noopener" style="text-decoration:none">BeAT 열기</a></div>`}
         <div class="fact"><b style="font-size:14px">답을 받은 다음 확인하기</b>${it.check.map((c, k) => `
           <label><input type="checkbox" data-fact="${i}-${j}:${k}" ${state.facts[`${i}-${j}:${k}`] ? "checked" : ""}>${c}</label>`).join("")}</div>
       </div>`).join("")}
@@ -533,6 +580,35 @@ const views = {
       </div>`;
   },
 };
+
+function utf8Bytes(str) { return new TextEncoder().encode(str).length; }
+function agentBuilder() {
+  const t = AGENT_TPL[state.agentTpl] || AGENT_TPL[0];
+  const bytes = utf8Bytes(t.desc);
+  const row = (label, req, body, copyText) => `<div class="ag-row"><div class="ag-label">${label}${req ? ' <span class="req">*</span>' : ""}</div><div class="ag-val">${body}${copyText ? `<button class="btn ag-copy" data-copy="${esc(copyText)}">복사</button>` : ""}</div></div>`;
+  return `
+    <div class="field"><span>만들고 싶은 Agent 고르기</span>
+      <div class="opts">${AGENT_TPL.map((x, k) => `<label><input type="radio" name="agtpl" data-agtpl="${k}" ${k === state.agentTpl ? "checked" : ""}>${x.label}</label>`).join("")}</div></div>
+    <div class="ag-form" aria-label="Agent 새로 만들기 입력 예시">
+      <div class="ag-title">Agent 새로 만들기 <small>· BeAT 화면의 칸 순서와 같아요</small></div>
+      <div class="ag-sec">Agent 기본</div>
+      ${row("분류", true, `<span>${t.cls}</span>`)}
+      ${row("공유 대상", false, `<span>처음에는 선택하지 않기 (나만 쓰기)</span>`)}
+      ${row("아이콘", true, `<span>마음에 드는 아이콘 하나</span>`)}
+      ${row("Agent 이름", true, `<span class="ag-text">${esc(t.name)}</span>`, t.name)}
+      ${row("Agent 설명", true, `<span class="ag-text">${esc(t.desc)}<br><small class="${bytes > 200 ? "over" : "ok"}">${bytes} / 200 Byte (UTF-8 기준)</small></span>`, t.desc)}
+      <div class="ag-sec">Agent 역할</div>
+      ${row("Agent 프롬프트", true, `<pre class="ag-pre">${esc(t.prompt)}</pre>`, t.prompt)}
+      <small class="ag-note">‘마술사’를 누르면 AI가 프롬프트를 다듬어 줘요. 다듬은 뒤에도 [지킬 것] 부분(개인정보 묻지 않기, 대신 해 주지 않기)이 남아 있는지 꼭 확인하세요.</small>
+      ${row("시작 프롬프트", false, `<ul class="ag-starts">${t.starts.map(x => `<li>${esc(x)}</li>`).join("")}</ul>`, t.starts.join("\n"))}
+      <small class="ag-note">‘시작 프롬프트 추가’를 눌러 하나씩 넣어요. 친구가 Agent를 처음 열었을 때 바로 누를 수 있는 버튼이 돼요.</small>
+      <div class="ag-sec">Agent 설정</div>
+      <div class="ag-row"><div class="ag-val" style="grid-column:1/-1"><span>${t.setting}</span></div></div>
+    </div>
+    ${fileBox(t.files)}
+    <div class="note info"><b>미리보기로 시험하기</b> · ${t.test}</div>
+    <div class="row"><a class="btn primary" href="${BEAT_URL}" target="_blank" rel="noopener" style="text-decoration:none">BeAT에서 만들기</a></div>`;
+}
 
 const KIND = { docx: "DOCX", txt: "TXT", csv: "CSV" };
 function fileBox(keys, note) {
@@ -695,6 +771,7 @@ document.addEventListener("change", e => {
     return saveArt(true);
   }
   if (t.dataset.art) { state.art[t.dataset.art] = +t.value; return saveArt(false); }
+  if (t.dataset.agtpl !== undefined) { state.agentTpl = +t.dataset.agtpl; save("agentTpl", state.agentTpl); return render(); }
   if (t.id === "art-text") { state.art.text = t.checked; return saveArt(false); }
   if (t.dataset.artafter !== undefined) {
     const k = +t.dataset.artafter;
