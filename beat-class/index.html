@@ -1,0 +1,532 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>BeAT 실습실</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;500;700&display=swap">
+<style>
+body { margin: 0; }
+/* Layout: 한 줄 탭 + 단일 작업 열. 휴대폰으로 수업 중에 쓰는 실습 도구 */
+:root {
+  --bg: #f3f6fb; --surface: #ffffff; --ink: #17223a; --muted: #56637c; --line: #dce3ee;
+  --blue: #2160d6; --blue-soft: #e3ecfc; --pink: #c93468; --pink-soft: #fbe5ed;
+  --yellow: #9a6a00; --yellow-soft: #fff3d1; --green: #2f7d33; --green-soft: #e3f2e3;
+  --display: "Jua", "Noto Sans KR", system-ui, sans-serif;
+  --body: "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  --mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0e1524; --surface: #162036; --ink: #e7ecf6; --muted: #9ba8c1; --line: #2a3651;
+  --blue: #79a7ff; --blue-soft: #1b2c50; --pink: #ff86ad; --pink-soft: #3a1d2b;
+  --yellow: #f6c851; --yellow-soft: #392f15; --green: #82cf85; --green-soft: #1c321f; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0e1524; --surface: #162036; --ink: #e7ecf6; --muted: #9ba8c1; --line: #2a3651;
+  --blue: #79a7ff; --blue-soft: #1b2c50; --pink: #ff86ad; --pink-soft: #3a1d2b;
+  --yellow: #f6c851; --yellow-soft: #392f15; --green: #82cf85; --green-soft: #1c321f; color-scheme: dark }
+
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 15px; line-height: 1.6; }
+.wrap { max-width: 860px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 24px 64px; }
+h1, h2, h3 { font-family: var(--display); font-weight: 400; text-wrap: balance; margin: 0; }
+h1 { font-size: 34px; line-height: 1.15; }
+h2 { font-size: 24px; }
+h3 { font-size: 18px; }
+p { margin: 0; }
+a { color: var(--blue); }
+button, input, select, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; }
+
+header.top { display: grid; gap: 8px; margin-bottom: 20px; }
+.eyebrow { font-size: 13px; letter-spacing: .06em; color: var(--blue); font-weight: 700; }
+.lede { color: var(--muted); max-width: 60ch; }
+.meta-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+.chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; font-size: 13px; background: var(--surface); border: 1px solid var(--line); }
+.chip b { font-variant-numeric: tabular-nums; }
+
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); }
+nav.tabs { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg); padding-block: 8px; margin-bottom: 16px; border-bottom: 1px solid var(--line); }
+.tab-row { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; }
+.tab-row::-webkit-scrollbar { display: none; }
+.tab { flex: none; border: 1px solid var(--line); background: var(--surface); border-radius: 10px; padding: 8px 12px; cursor: pointer; font-size: 14px; display: flex; gap: 6px; align-items: center; }
+.tab .n { font-family: var(--display); color: var(--muted); }
+.tab[aria-selected="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.tab[aria-selected="true"] .n { color: inherit; }
+.tab .done { width: 8px; height: 8px; border-radius: 50%; background: var(--green); }
+
+section.panel { display: grid; gap: 16px; }
+.panel-head { display: grid; gap: 4px; }
+.panel-head .time { font-size: 13px; color: var(--muted); }
+.box { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px; display: grid; gap: 12px; min-width: 0; }
+.note { border-radius: 12px; padding: 12px 14px; font-size: 14px; }
+.note.warn { background: var(--yellow-soft); color: var(--ink); border: 1px solid color-mix(in srgb, var(--yellow) 40%, transparent); }
+.note.info { background: var(--blue-soft); }
+.btn { border: 1px solid var(--line); background: var(--surface); border-radius: 10px; padding: 8px 14px; cursor: pointer; font-weight: 500; }
+.btn.primary { background: var(--blue); border-color: var(--blue); color: var(--surface); }
+.btn:disabled { opacity: .5; cursor: default; }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+
+/* 퀴즈 */
+.quiz-card { display: grid; gap: 12px; }
+.quiz-q { font-size: 18px; font-weight: 500; }
+.ox { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.ox button { border: 2px solid var(--line); background: var(--surface); border-radius: 14px; padding: 14px; font-family: var(--display); font-size: 28px; cursor: pointer; }
+.ox button.o { color: var(--blue); }
+.ox button.x { color: var(--pink); }
+.ox button[data-picked="true"] { border-color: currentColor; }
+.verdict { border-radius: 12px; padding: 12px 14px; display: grid; gap: 4px; }
+.verdict.right { background: var(--green-soft); }
+.verdict.wrong { background: var(--pink-soft); }
+.verdict strong { font-family: var(--display); font-weight: 400; font-size: 18px; }
+.tag { display: inline-block; font-size: 12px; padding: 2px 8px; border-radius: 999px; background: var(--blue-soft); color: var(--blue); font-weight: 700; }
+.dots { display: flex; gap: 6px; flex-wrap: wrap; }
+.dots span { width: 22px; height: 6px; border-radius: 3px; background: var(--line); }
+.dots span.ok { background: var(--green); }
+.dots span.no { background: var(--pink); }
+.dots span.now { background: var(--ink); }
+
+/* 체크리스트 */
+.checks { display: grid; gap: 8px; list-style: none; padding: 0; margin: 0; }
+.checks label { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); cursor: pointer; background: var(--surface); }
+.checks input { width: 20px; height: 20px; margin-top: 2px; accent-color: var(--blue); flex: none; }
+.checks small { display: block; color: var(--muted); }
+.pledge-done { text-align: center; padding: 16px; border-radius: 14px; background: var(--green-soft); font-family: var(--display); font-size: 20px; }
+
+/* 단계 */
+.steps { display: grid; gap: 10px; counter-reset: s; list-style: none; padding: 0; margin: 0; }
+.steps li { display: grid; grid-template-columns: 36px 1fr; gap: 12px; align-items: start; }
+.steps li::before { counter-increment: s; content: counter(s); font-family: var(--display); font-size: 18px; width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; background: var(--blue-soft); color: var(--blue); }
+.steps .body { display: grid; gap: 4px; min-width: 0; padding-top: 6px; }
+.steps .body small { color: var(--muted); }
+.url { font-family: var(--mono); font-size: 15px; background: var(--blue-soft); padding: 2px 8px; border-radius: 6px; word-break: break-all; }
+
+/* 프롬프트 만들기 */
+.builder { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media (max-width: 720px) { .builder { grid-template-columns: 1fr; } }
+.field { display: grid; gap: 6px; }
+.field > span { font-size: 13px; font-weight: 700; display: flex; gap: 6px; align-items: center; }
+.field .key { font-family: var(--display); font-weight: 400; font-size: 13px; padding: 0 8px; border-radius: 6px; color: var(--surface); }
+.k-role { background: var(--blue); } .k-ctx { background: var(--green); } .k-ask { background: var(--pink); } .k-fmt { background: var(--yellow); }
+input[type="text"], select, textarea { width: 100%; border: 1px solid var(--line); background: var(--bg); border-radius: 10px; padding: 9px 11px; }
+textarea { resize: vertical; min-height: 80px; }
+.opts { display: flex; flex-wrap: wrap; gap: 6px; }
+.opts label { display: inline-flex; gap: 6px; align-items: center; border: 1px solid var(--line); border-radius: 999px; padding: 4px 10px; font-size: 13px; cursor: pointer; background: var(--surface); }
+.opts input { accent-color: var(--blue); }
+.preview { font-family: var(--body); white-space: pre-wrap; background: var(--bg); border: 1px dashed var(--line); border-radius: 12px; padding: 14px; min-height: 160px; font-size: 15px; word-break: break-word; }
+.score { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.score div { font-size: 12px; text-align: center; padding: 6px 4px; border-radius: 8px; background: var(--bg); color: var(--muted); border: 1px solid var(--line); }
+.score div.on { color: var(--ink); background: var(--green-soft); border-color: transparent; font-weight: 700; }
+
+/* 고쳐쓰기 비교 */
+.compare { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+@media (max-width: 560px) { .compare { grid-template-columns: 1fr; } }
+.compare .bad, .compare .good { border-radius: 12px; padding: 12px; display: grid; gap: 4px; min-width: 0; }
+.compare .bad { background: var(--pink-soft); }
+.compare .good { background: var(--green-soft); }
+.compare b { font-size: 13px; }
+
+/* 미션 */
+.mission { display: grid; gap: 10px; }
+.mission-head { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+.mission-head .lv { font-family: var(--display); color: var(--blue); }
+.prompt-block { position: relative; background: var(--bg); border-radius: 12px; padding: 12px 14px; white-space: pre-wrap; border-left: 4px solid var(--blue); font-size: 14.5px; }
+.prompt-block mark { background: var(--yellow-soft); color: var(--ink); border-radius: 4px; padding: 0 3px; }
+.fact { display: grid; gap: 6px; }
+.fact label { display: flex; gap: 8px; align-items: flex-start; font-size: 14px; cursor: pointer; }
+.fact input { accent-color: var(--green); width: 18px; height: 18px; flex: none; margin-top: 2px; }
+details summary { cursor: pointer; color: var(--muted); font-size: 14px; }
+
+/* BeAT 화면을 본뜬 메뉴 막대 */
+.beat-bar { display: flex; align-items: center; gap: 16px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 4px 14px; overflow-x: auto; }
+.beat-logo { font-family: var(--body); font-weight: 700; font-size: 22px; letter-spacing: -.02em; flex: none; }
+.beat-logo i { color: var(--blue); font-style: italic; }
+.beat-menus { display: flex; gap: 4px; margin-left: auto; }
+.beat-menus button { flex: none; border: 0; background: none; padding: 12px 10px; cursor: pointer; font-size: 15px; border-bottom: 3px solid transparent; color: var(--ink); white-space: nowrap; }
+.beat-menus button[aria-selected="true"] { color: var(--blue); border-bottom-color: var(--blue); font-weight: 700; }
+.done-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--green); vertical-align: middle; }
+.path { display: flex; flex-wrap: wrap; gap: 4px; list-style: none; padding: 0; margin: 0; font-size: 13px; }
+.path li { background: var(--blue-soft); color: var(--ink); padding: 3px 10px; border-radius: 999px; }
+.path li + li::before { content: "→ "; color: var(--muted); }
+.toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(20px + env(safe-area-inset-bottom, 0px)); background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 10px; font-size: 14px; z-index: 20; }
+@media (prefers-reduced-motion: no-preference) { .panel { animation: in .2s ease-out; } @keyframes in { from { opacity: .6; transform: translateY(4px); } } }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="top">
+    <span class="eyebrow">부산교육 AI 튜터 BeAT · 1차시 실습</span>
+    <h1>BeAT 실습실</h1>
+    <p class="lede">윤리 퀴즈로 시작해서, 접속하고, 질문을 만들고, 직접 물어본 다음, 답이 맞는지 확인하는 데까지. 선생님이 안내하는 순서대로 탭을 넘기세요.</p>
+    <div class="meta-row">
+      <span class="chip">퀴즈 <b id="chipQuiz">0/8</b></span>
+      <span class="chip">안전 약속 <b id="chipPledge">0/5</b></span>
+      <span class="chip">메뉴 실습 <b id="chipMission">0/4</b></span>
+    </div>
+  </header>
+
+  <nav class="tabs" aria-label="실습 단계">
+    <div class="tab-row" role="tablist" id="tabRow"></div>
+  </nav>
+
+  <main id="panels"></main>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+const BEAT_URL = "https://beat.busanedu.net";
+
+const QUIZ = [
+  { q: "국어 수행평가 감상문을 AI에게 써 달라고 한 뒤, 이름만 바꿔서 그대로 냈다.", a: false, tag: "학업 윤리",
+    why: "AI가 만든 글을 그대로 내면 내 생각이 아니에요. 아이디어를 얻는 데 쓰고, 글은 내가 직접 쓰고 고쳐야 해요." },
+  { q: "수학 문제에서 막혀서 “정답은 말하지 말고 힌트만 한 단계씩 줘”라고 물었다.", a: true, tag: "똑똑한 활용",
+    why: "답을 받아 적는 대신 스스로 풀 수 있게 도와 달라고 했어요. AI를 과외 선생님처럼 쓰는 좋은 방법이에요." },
+  { q: "진로 상담을 받으려고 내 이름, 학교, 전화번호, 생활기록부 내용을 그대로 붙여 넣었다.", a: false, tag: "개인정보",
+    why: "학교생활기록부, 전화번호, 건강정보 같은 개인정보는 입력하지 않아요. “관심 분야가 ○○인 고1”처럼 바꿔서 물어보면 충분해요." },
+  { q: "AI가 알려 준 역사 사건 연도를 교과서로 확인했더니 달랐다. 교과서 내용을 따랐다.", a: true, tag: "사실 확인",
+    why: "AI는 틀린 내용을 그럴듯하게 말할 때가 있어요(할루시네이션). 교과서나 믿을 수 있는 자료로 다시 확인하는 게 정답이에요." },
+  { q: "친구 얼굴 사진을 허락 없이 올려서 웃긴 합성 이미지를 만들고 단톡방에 공유했다.", a: false, tag: "초상권·딥페이크",
+    why: "다른 사람의 얼굴은 그 사람의 것이에요. 장난이어도 허락 없는 합성과 공유는 상처를 주고, 법적인 문제가 될 수 있어요." },
+  { q: "발표 자료에 AI로 만든 그림을 넣고 아래에 “AI 생성 이미지(BeAT)”라고 적었다.", a: true, tag: "출처 표시",
+    why: "AI로 만든 결과물이나 다른 사람의 글·그림을 쓸 때는 출처를 밝혀요. 듣는 사람도 무엇이 AI 작품인지 알 수 있어요." },
+  { q: "AI가 너무 자신 있게 말해서, 확인하지 않고 그대로 외워 시험 공부를 했다.", a: false, tag: "사실 확인",
+    why: "말투가 자신 있다고 내용이 맞는 건 아니에요. 중요한 내용일수록 교과서나 선생님께 확인해요." },
+  { q: "AI가 이상하고 불편한 답을 해서 캡처해 두고 선생님께 알렸다.", a: true, tag: "신고하기",
+    why: "불편하거나 이상한 답변이 나오면 선생님이나 운영진에게 알려요. 그래야 모두가 더 안전하게 쓸 수 있어요." },
+];
+
+const PLEDGE = [
+  ["개인정보를 입력하지 않아요.", "학교생활기록부, 전화번호, 건강정보, 주소, 친구 이름"],
+  ["AI 답변이 정확한지 다시 확인해요.", "교과서나 믿을 수 있는 자료와 비교하기"],
+  ["다른 사람의 글과 이미지를 쓸 때 출처를 표시해요.", "AI로 만든 결과물에도 표시하기"],
+  ["AI가 만든 내용을 그대로 제출하지 않아요.", "직접 확인하고, 내 말로 고쳐 쓰기"],
+  ["불편하거나 이상한 답변은 선생님께 알려요.", "캡처해 두고 선생님이나 운영진에게"],
+];
+
+const STEPS = [
+  { t: "주소창에 BeAT 주소 입력하기", s: `<span class="url">${BEAT_URL}</span> · 리플릿의 QR 코드로도 들어갈 수 있어요.` },
+  { t: "학교에서 안내받은 계정으로 로그인하기", s: "로그인 방식과 아이디는 선생님 안내를 따르세요. 비밀번호는 친구에게 알려 주지 않아요." },
+  { t: "화면 위쪽 메뉴 4개 찾아보기", s: "수업GPT · 개인GPT · AI Agents · Custom AI. 오른쪽 끝에 내 이름이 보이면 로그인 성공이에요." },
+  { t: "수업GPT에서 첫 질문 보내기", s: "왼쪽 카테고리 → BeAT활용안내 AI챗봇 → BeAT 활용 가이드 질문을 누르고, “BeAT로 공부할 때 무엇을 할 수 있어? 고등학생 예시로 3줄로 알려 줘.”라고 물어보세요." },
+  { t: "답을 받았으면 손 들기", s: "막히면 옆 친구와 화면을 비교해 보고, 그래도 안 되면 선생님을 불러요." },
+];
+
+const SPACES = [
+  ["수업GPT", "선생님이 올린 교과서, 학습지, 해설지를 바탕으로 질문해요. 왼쪽 카테고리에서 우리 선생님 폴더를 골라요."],
+  ["개인GPT", "궁금한 걸 자유롭게 묻고, 내 자료(문서·이미지)를 올려 요약·설명을 받는 나만의 학습 도우미예요."],
+  ["AI Agents", "발표, 수행평가, 진로 탐색처럼 목적에 맞게 만들어진 도우미를 골라 써요. 직접 만들 수도 있어요."],
+  ["Custom AI", "번역, 수업 기록·요약, 자기소개 피드백처럼 특정 활동에 맞춘 도구예요."],
+];
+
+// 메뉴별 실습: 실제 BeAT 상단 메뉴 순서와 같게
+const MISSIONS = [
+  { menu: "수업GPT", title: "선생님 자료로 개념 정리하기", must: true,
+    path: ["수업GPT", "왼쪽 카테고리", "우리 학교_선생님 폴더 (없으면 BeAT활용안내 AI챗봇)", "대화 시작"],
+    prompt: "이 자료에 나오는 핵심 개념 3가지를 고등학생 눈높이로 설명해 줘.\n각 개념마다 자료의 어느 부분에 나오는지도 알려 줘.\n마지막에 내가 이해했는지 확인하는 O/X 문제 2개를 내 줘. 정답은 내가 답한 뒤에 알려 줘.",
+    check: ["답이 선생님 자료 내용을 바탕으로 했나요?", "‘자료의 어느 부분’이라고 한 곳을 실제로 찾아봤나요?", "O/X 문제를 내 힘으로 풀었나요?"] },
+  { menu: "개인GPT", title: "어려운 개념, 내 관심사로 이해하기",
+    path: ["개인GPT", "새 대화", "질문 입력 (자료가 있으면 첨부)"],
+    prompt: "나는 고등학교 [1]학년이야. [요즘 배우는 개념, 예: 광합성]을 [내가 좋아하는 것, 예: 게임]에 비유해서 3문장으로 쉽게 설명해 줘.\n그다음 비유가 맞지 않는 부분이 있으면 하나 알려 주고, 확인 퀴즈 2개를 내 줘.",
+    check: ["비유가 개념의 핵심을 제대로 담고 있나요?", "교과서 설명과 다른 부분이 없나요?", "AI가 말한 ‘비유가 맞지 않는 부분’을 이해했나요?"] },
+  { menu: "AI Agents", title: "관심사로 진로·학과 탐색하기",
+    path: ["AI Agents", "목록에서 진로·진학 관련 Agent 찾기", "대화 시작"],
+    prompt: "나는 [좋아하는 것, 예: 영상 편집]에 관심이 많은 고등학생이야.\n관련 대학 학과 3개를 표로 정리해 줘. 칸은 ‘학과 / 배우는 것 / 고등학교 때 해 볼 수 있는 활동’으로 해 줘.\n확실하지 않은 정보는 ‘확인 필요’라고 표시해 줘.",
+    check: ["이름·학교·성적 같은 개인정보를 넣지 않았나요?", "‘확인 필요’ 표시가 있는 정보를 대학 누리집에서 찾아봤나요?", "이 표에 내 생각을 한 줄 덧붙였나요?"] },
+  { menu: "Custom AI", title: "자기소개 피드백 받기 (대신 써 주기 X)",
+    path: ["Custom AI", "자기소개·면접 관련 도구 고르기 (없으면 번역 도구)", "대화 시작"],
+    prompt: "아래는 내가 직접 쓴 자기소개 3문장이야.\n대신 써 주지는 말고, 좋은 점 1개와 고치면 좋을 점 2개만 알려 줘. 고칠 방향은 질문 형태로 알려 줘.\n\n[내가 쓴 자기소개 3문장 — 이름·학교 이름은 빼고 쓰기]",
+    alt: "번역 도구라면: 영어 교과서 문단 하나를 번역하게 한 뒤, 원문과 비교해서 어색한 문장 1개를 찾아보세요.",
+    check: ["자기소개에 이름·학교 같은 개인정보를 빼고 넣었나요?", "AI가 대신 써 준 문장이 아니라 내 문장을 고쳤나요?", "피드백 중 동의하지 않는 것이 있다면 이유를 말할 수 있나요?"] },
+];
+
+const BAD_GOOD = [
+  ["수학 알려줘", "너는 친절한 수학 선생님이야. 나는 고1인데 이차함수 꼭짓점 구하는 법이 헷갈려. 예시 1개로 단계별로 설명해 줘."],
+  ["영어 숙제 해줘", "이 문장에서 관계대명사와 관계부사 중 무엇을 써야 하는지, 그 이유까지 자세히 알려 줘. 답은 내가 먼저 고른 다음에 알려 줘."],
+  ["진로 추천해", "나는 동물과 과학을 좋아하는 고등학생이야. 관련 직업 3개를 하는 일과 필요한 공부로 나눠 표로 정리해 줘."],
+];
+
+const TABS = [
+  { id: "quiz", n: "1", label: "윤리 퀴즈", time: "8분" },
+  { id: "pledge", n: "2", label: "안전 약속", time: "2분" },
+  { id: "login", n: "3", label: "접속하기", time: "7분" },
+  { id: "build", n: "4", label: "질문 만들기", time: "5분" },
+  { id: "mission", n: "5", label: "메뉴별 실습", time: "13분" },
+  { id: "review", n: "6", label: "돌아보기", time: "5분" },
+];
+
+const load = (k, d) => { try { const v = localStorage.getItem("beat1:" + k); return v ? JSON.parse(v) : d; } catch { return d; } };
+const save = (k, v) => { try { localStorage.setItem("beat1:" + k, JSON.stringify(v)); } catch {} };
+
+const state = {
+  tab: load("tab", "quiz"),
+  quiz: load("quiz", {}),       // index -> picked boolean
+  qi: load("qi", 0),
+  pledge: load("pledge", []),
+  login: load("login", []),
+  build: load("build", { subject: "수학", role: "친절한 과외 선생님", ctx: "나는 고등학교 1학년이고, 이 부분이 헷갈려.", ask: "", fmt: ["단계별로"], cond: ["정답은 바로 말하지 말기"] }),
+  facts: load("facts", {}),
+  menu: load("menu", 0),
+  review: load("review", { q1: "", q2: "", q3: "" }),
+};
+if (location.hash && TABS.some(t => t.id === location.hash.slice(1))) state.tab = location.hash.slice(1);
+
+const $ = s => document.querySelector(s);
+const esc = s => s.replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+function toast(msg) {
+  const t = $("#toast"); t.textContent = msg; t.hidden = false;
+  clearTimeout(toast.h); toast.h = setTimeout(() => (t.hidden = true), 1600);
+}
+async function copy(text) {
+  try { await navigator.clipboard.writeText(text); toast("복사했어요. BeAT 입력창에 붙여 넣으세요."); }
+  catch { toast("복사가 막혔어요. 글을 길게 눌러 직접 복사해 주세요."); }
+}
+
+function missionDone(i) { return MISSIONS[i].check.every((_, k) => state.facts[i + ":" + k]); }
+function tabDone(id) {
+  if (id === "quiz") return Object.keys(state.quiz).length === QUIZ.length;
+  if (id === "pledge") return state.pledge.length === PLEDGE.length;
+  if (id === "login") return state.login.length === STEPS.length;
+  if (id === "mission") return missionDone(0) && MISSIONS.some((_, i) => i > 0 && missionDone(i));
+  if (id === "review") return state.review.q1 && state.review.q2 && state.review.q3;
+  return false;
+}
+
+function renderChrome() {
+  const score = QUIZ.filter((q, i) => state.quiz[i] === q.a).length;
+  $("#chipQuiz").textContent = `${Object.keys(state.quiz).length}/8 · 정답 ${score}`;
+  $("#chipPledge").textContent = `${state.pledge.length}/5`;
+  $("#chipMission").textContent = `${MISSIONS.filter((_, i) => missionDone(i)).length}/4`;
+  $("#tabRow").innerHTML = TABS.map(t => `
+    <button class="tab" role="tab" id="tab-${t.id}" aria-selected="${state.tab === t.id}" data-tab="${t.id}">
+      <span class="n">${t.n}</span>${t.label}${tabDone(t.id) ? '<span class="done" aria-label="완료"></span>' : ""}
+    </button>`).join("");
+}
+
+function head(id, title, desc) {
+  const t = TABS.find(x => x.id === id);
+  return `<div class="panel-head"><span class="time">${t.n}단계 · 약 ${t.time}</span><h2>${title}</h2><p class="lede">${desc}</p></div>`;
+}
+
+const views = {
+  quiz() {
+    const i = Math.min(state.qi, QUIZ.length - 1), q = QUIZ[i], picked = state.quiz[i];
+    const answered = picked !== undefined;
+    const dots = QUIZ.map((x, k) => `<span class="${k === i ? "now" : state.quiz[k] === undefined ? "" : state.quiz[k] === x.a ? "ok" : "no"}"></span>`).join("");
+    return head("quiz", "이럴 때, 괜찮을까?", "학교에서 실제로 있을 법한 상황 8가지예요. 괜찮으면 O, 안 되면 X를 누르세요.") + `
+      <div class="box quiz-card">
+        <div class="row" style="justify-content:space-between"><span class="tag">${q.tag}</span><span class="time" style="font-size:13px;color:var(--muted)">${i + 1} / ${QUIZ.length}</span></div>
+        <div class="dots" aria-hidden="true">${dots}</div>
+        <p class="quiz-q">${q.q}</p>
+        <div class="ox">
+          <button class="o" data-ox="true" data-picked="${picked === true}" ${answered ? "disabled" : ""} aria-label="O, 괜찮다">O</button>
+          <button class="x" data-ox="false" data-picked="${picked === false}" ${answered ? "disabled" : ""} aria-label="X, 안 된다">X</button>
+        </div>
+        ${answered ? `<div class="verdict ${picked === q.a ? "right" : "wrong"}"><strong>${picked === q.a ? "맞았어요" : "다시 생각해 봐요"} · 정답 ${q.a ? "O" : "X"}</strong><p>${q.why}</p></div>` : ""}
+        <div class="row" style="justify-content:space-between">
+          <button class="btn" data-qnav="-1" ${i === 0 ? "disabled" : ""}>이전</button>
+          ${i < QUIZ.length - 1
+            ? `<button class="btn primary" data-qnav="1" ${answered ? "" : "disabled"}>다음 상황</button>`
+            : `<button class="btn primary" data-go="pledge" ${answered ? "" : "disabled"}>안전 약속으로</button>`}
+        </div>
+      </div>
+      <details><summary>퀴즈 다시 풀기</summary><div class="row" style="margin-top:8px"><button class="btn" data-reset="quiz">처음부터 다시</button></div></details>`;
+  },
+
+  pledge() {
+    const all = state.pledge.length === PLEDGE.length;
+    return head("pledge", "BeAT 안전 사용 약속", "부산교육 AI 튜터 리플릿에 실린 다섯 가지 약속이에요. 읽고 하나씩 체크하세요.") + `
+      <ul class="checks">${PLEDGE.map(([t, s], k) => `
+        <li><label><input type="checkbox" data-pledge="${k}" ${state.pledge.includes(k) ? "checked" : ""}><span>${t}<small>${s}</small></span></label></li>`).join("")}
+      </ul>
+      ${all ? `<div class="pledge-done">약속 완료! 이제 BeAT에 접속해 볼까요?</div><div class="row"><button class="btn primary" data-go="login">접속하기로</button></div>` : ""}`;
+  },
+
+  login() {
+    return head("login", "BeAT 접속하고 첫 질문 보내기", "한 단계씩 따라 하고 끝나면 체크하세요.") + `
+      <div class="box">
+        <ol class="steps">${STEPS.map((s, k) => `
+          <li><div class="body"><label style="display:flex;gap:8px;align-items:flex-start;cursor:pointer"><input type="checkbox" data-login="${k}" ${state.login.includes(k) ? "checked" : ""} style="width:18px;height:18px;margin-top:3px;accent-color:var(--blue)"><b>${s.t}</b></label><small>${s.s}</small></div></li>`).join("")}
+        </ol>
+        <div class="row"><a class="btn primary" href="${BEAT_URL}" target="_blank" rel="noopener" style="text-decoration:none">BeAT 열기</a><button class="btn" data-copy="BeAT로 공부할 때 무엇을 할 수 있어? 고등학생 예시로 3줄로 알려 줘.">첫 질문 복사</button></div>
+      </div>
+      <div class="note warn">로그인이 안 되면 계정을 새로 만들지 말고 선생님께 알려 주세요. 다른 사람 계정으로 로그인하지 않아요.</div>
+      <div class="box">
+        <h3>BeAT 위쪽 메뉴 4개, 언제 쓸까?</h3>
+        <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:14px">
+          <thead><tr><th style="text-align:left;padding:8px;border-bottom:1px solid var(--line)">메뉴</th><th style="text-align:left;padding:8px;border-bottom:1px solid var(--line)">이럴 때 써요</th></tr></thead>
+          <tbody>${SPACES.map(([a, b]) => `<tr><td style="padding:8px;border-bottom:1px solid var(--line);white-space:nowrap;font-weight:700">${a}</td><td style="padding:8px;border-bottom:1px solid var(--line)">${b}</td></tr>`).join("")}</tbody>
+        </table></div>
+      </div>`;
+  },
+
+  build() {
+    const b = state.build;
+    const fmtOpts = ["단계별로", "3줄 요약", "표로 정리", "쉬운 비유와 예시", "확인 문제 3개"];
+    const condOpts = ["정답은 바로 말하지 말기", "모르면 모른다고 말하기", "확실하지 않으면 ‘확인 필요’ 표시", "고등학생 눈높이로"];
+    return head("build", "좋은 질문 = 역할 + 상황 + 요청 + 형식", "빈칸을 채우면 BeAT에 보낼 질문이 오른쪽에 완성돼요. 네 칸이 모두 초록색이 되게 만들어 보세요.") + `
+      <div class="box">
+        <h3>이렇게 바꾸면 답이 달라져요</h3>
+        ${BAD_GOOD.map(([bad, good]) => `<div class="compare"><div class="bad"><b>아쉬운 질문</b><span>${bad}</span></div><div class="good"><b>좋은 질문</b><span>${good}</span></div></div>`).join("")}
+      </div>
+      <div class="builder">
+        <div class="box">
+          <label class="field"><span><span class="key k-role">역할</span> AI에게 맡길 역할</span>
+            <select id="b-role">${["친절한 과외 선생님", "진로 상담 선생님", "토론 상대", "면접관", "꼼꼼한 첨삭 선생님"].map(r => `<option ${r === b.role ? "selected" : ""}>${r}</option>`).join("")}</select></label>
+          <label class="field"><span>과목</span>
+            <select id="b-subject">${["국어", "영어", "수학", "사회", "과학", "진로", "정보"].map(r => `<option ${r === b.subject ? "selected" : ""}>${r}</option>`).join("")}</select></label>
+          <label class="field"><span><span class="key k-ctx">상황</span> 나는 지금 어떤 상태?</span>
+            <textarea id="b-ctx" rows="2">${esc(b.ctx)}</textarea></label>
+          <label class="field"><span><span class="key k-ask">요청</span> 무엇을 해 줬으면?</span>
+            <textarea id="b-ask" rows="2" placeholder="예: 이차함수의 꼭짓점 구하는 방법을 설명해 줘">${esc(b.ask)}</textarea></label>
+          <div class="field"><span><span class="key k-fmt">형식</span> 어떤 모양으로?</span>
+            <div class="opts">${fmtOpts.map(o => `<label><input type="checkbox" data-fmt="${o}" ${b.fmt.includes(o) ? "checked" : ""}>${o}</label>`).join("")}</div></div>
+          <div class="field"><span>조건 (선택)</span>
+            <div class="opts">${condOpts.map(o => `<label><input type="checkbox" data-cond="${o}" ${b.cond.includes(o) ? "checked" : ""}>${o}</label>`).join("")}</div></div>
+        </div>
+        <div class="box" style="align-content:start">
+          <h3>완성된 질문</h3>
+          <div class="score" id="score"></div>
+          <div class="preview" id="preview" aria-live="polite"></div>
+          <div class="row"><button class="btn primary" id="copyBuilt">질문 복사</button><a class="btn" href="${BEAT_URL}" target="_blank" rel="noopener" style="text-decoration:none">BeAT 열기</a></div>
+          <div class="note warn">이름, 학교, 전화번호는 넣지 않았는지 보내기 전에 한 번 더 확인!</div>
+        </div>
+      </div>`;
+  },
+
+  mission() {
+    const i = state.menu, m = MISSIONS[i];
+    return head("mission", "메뉴별 실습: 묻고, 확인하고, 내 것으로", "BeAT 위쪽 메뉴와 같은 순서예요. 수업GPT는 모두 하고, 나머지는 하나 이상 골라 해 보세요. [ ] 칸은 내 상황에 맞게 바꿔 쓰고, 답을 받은 뒤 확인 체크를 모두 하면 완료예요.") + `
+      <div class="beat-bar" role="tablist" aria-label="BeAT 메뉴">
+        <span class="beat-logo">B<i>e</i>AT</span>
+        <div class="beat-menus">${MISSIONS.map((x, k) => `
+          <button role="tab" aria-selected="${k === i}" data-menu="${k}">${x.menu}${missionDone(k) ? ' <span class="done-dot" aria-label="완료"></span>' : ""}</button>`).join("")}
+        </div>
+      </div>
+      <div class="box mission">
+        <div class="mission-head"><span class="lv">${m.menu}</span><h3>${m.title}</h3>${m.must ? '<span class="tag">모두 하기</span>' : ""}${missionDone(i) ? '<span class="tag" style="background:var(--green-soft);color:var(--green)">완료</span>' : ""}</div>
+        <ol class="path">${m.path.map(p => `<li>${p}</li>`).join("")}</ol>
+        <div class="prompt-block">${esc(m.prompt).replace(/\[([^\]]+)\]/g, "<mark>[$1]</mark>")}</div>
+        ${m.alt ? `<small style="color:var(--muted)">${m.alt}</small>` : ""}
+        <div class="row"><button class="btn primary" data-copy="${esc(m.prompt)}">프롬프트 복사</button><a class="btn" href="${BEAT_URL}" target="_blank" rel="noopener" style="text-decoration:none">BeAT 열기</a></div>
+        <div class="fact"><b style="font-size:14px">답을 받은 다음 확인하기</b>${m.check.map((c, k) => `
+          <label><input type="checkbox" data-fact="${i}:${k}" ${state.facts[i + ":" + k] ? "checked" : ""}>${c}</label>`).join("")}</div>
+        <div class="row" style="justify-content:space-between">
+          <button class="btn" data-menu="${i - 1}" ${i === 0 ? "disabled" : ""}>이전 메뉴</button>
+          ${i < MISSIONS.length - 1 ? `<button class="btn primary" data-menu="${i + 1}">다음 메뉴: ${MISSIONS[i + 1].menu}</button>` : `<button class="btn primary" data-go="review">돌아보기로</button>`}
+        </div>
+      </div>` + `
+      <div class="box">
+        <h3>더 해 보고 싶다면</h3>
+        <p>리플릿에 실린 과목별 질문이에요. 그대로 복사해서 써 봐도 좋아요.</p>
+        ${[
+          ["국어", "주장에 대한 반론이 들어왔을 때 논리적으로 재반박하려면 어떤 근거를 보강해야 할까?"],
+          ["영어", "이 문장에서 관계대명사와 관계부사 중 어떤 것을 써야 하는지 그 이유까지 자세히 알려 줘."],
+          ["수학", "내가 푼 방식이 정답과 다른데, 풀이 과정 중 어느 단계에서 오류가 생겼는지 알려 줘."],
+          ["사회·과학", "그래프에서 변수 사이의 상관관계를 어떻게 해석하고 결론을 이끌어 내야 할까?"],
+          ["요약", "첨부 자료를 요약하고 확인 문제 3개를 만들어 줘."],
+        ].map(([s, p]) => `<div class="row" style="justify-content:space-between;border-top:1px solid var(--line);padding-top:8px"><span style="min-width:0;flex:1"><span class="tag">${s}</span> ${p}</span><button class="btn" data-copy="${esc(p)}">복사</button></div>`).join("")}
+      </div>`;
+  },
+
+  review() {
+    const r = state.review;
+    return head("review", "오늘의 돌아보기", "세 줄만 쓰면 돼요. 선생님이 몇 명에게 발표를 부탁할 수 있어요.") + `
+      <div class="box">
+        <label class="field"><span>1. AI 답에서 확인이 필요했던 부분은? 어떻게 확인했나요?</span><textarea id="r-q1" rows="2">${esc(r.q1)}</textarea></label>
+        <label class="field"><span>2. 안전 약속 다섯 가지 중 나에게 가장 필요한 것은? 이유는?</span><textarea id="r-q2" rows="2">${esc(r.q2)}</textarea></label>
+        <label class="field"><span>3. 다음 주 공부에 BeAT를 어떻게 써 보고 싶나요?</span><textarea id="r-q3" rows="2">${esc(r.q3)}</textarea></label>
+        <small style="color:var(--muted)">쓴 내용은 이 기기 브라우저에만 저장돼요. 선생님께 제출하려면 아래 버튼으로 복사해서 안내받은 곳에 붙여 넣으세요.</small>
+        <div class="row"><button class="btn primary" id="copyReview">돌아보기 복사</button></div>
+      </div>
+      <div class="box">
+        <h3>BeAT 활용 학생 교육 프로그램 (2026년 10월~12월)</h3>
+        <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:14px">
+          <tbody>${[
+            ["개인 활용 교육", "회차별 2시간 · 예습·복습·오답 분석, 문서 요약, 진로 탐색 AI Agents, 자기소개서·면접 준비"],
+            ["포트폴리오 제작", "1회 4시간(총 2회) · 문제 찾기 → 아이디어 기획 → 결과물 제작 → 발표"],
+            ["우수사례 공모전", "11월 공고 후 온라인 접수 · 창의성, 교육적 효과, 활용 적극성, 완성도"],
+          ].map(([a, b]) => `<tr><td style="padding:8px;border-bottom:1px solid var(--line);white-space:nowrap;font-weight:700;vertical-align:top">${a}</td><td style="padding:8px;border-bottom:1px solid var(--line)">${b}</td></tr>`).join("")}</tbody>
+        </table></div>
+        <small style="color:var(--muted)">접속 <span class="url">${BEAT_URL}</span> · 문의 yb3447@pusan.ac.kr (부산대학교 AI융합교육원)</small>
+      </div>`;
+  },
+};
+
+function builtPrompt() {
+  const b = state.build;
+  const lines = [];
+  if (b.role) lines.push(`너는 ${b.subject} 공부를 도와주는 ${b.role}이야.`);
+  if (b.ctx.trim()) lines.push(b.ctx.trim());
+  if (b.ask.trim()) lines.push(b.ask.trim());
+  if (b.fmt.length) lines.push(`답 형식: ${b.fmt.join(", ")}`);
+  if (b.cond.length) lines.push(`조건: ${b.cond.join(" / ")}`);
+  return lines.join("\n");
+}
+function updateBuilder() {
+  const b = state.build;
+  const parts = [["역할", !!b.role], ["상황", b.ctx.trim().length > 4], ["요청", b.ask.trim().length > 4], ["형식", b.fmt.length > 0]];
+  $("#score").innerHTML = parts.map(([n, on]) => `<div class="${on ? "on" : ""}">${n}</div>`).join("");
+  $("#preview").textContent = builtPrompt() || "왼쪽 칸을 채우면 여기에 질문이 만들어져요.";
+  save("build", b);
+}
+
+function render() {
+  renderChrome();
+  $("#panels").innerHTML = `<section class="panel" role="tabpanel" aria-labelledby="tab-${state.tab}">${views[state.tab]()}</section>`;
+  if (state.tab === "build") updateBuilder();
+}
+
+function go(tab) { state.tab = tab; save("tab", tab); render(); window.scrollTo({ top: 0 }); }
+
+document.addEventListener("click", e => {
+  const t = e.target.closest("[data-tab],[data-go],[data-ox],[data-qnav],[data-copy],[data-menu],[data-reset],#copyBuilt,#copyReview");
+  if (!t) return;
+  if (t.dataset.tab) return go(t.dataset.tab);
+  if (t.dataset.go) return go(t.dataset.go);
+  if (t.dataset.ox) { state.quiz[state.qi] = t.dataset.ox === "true"; save("quiz", state.quiz); return render(); }
+  if (t.dataset.qnav) { state.qi = Math.max(0, Math.min(QUIZ.length - 1, state.qi + +t.dataset.qnav)); save("qi", state.qi); return render(); }
+  if (t.dataset.reset === "quiz") { state.quiz = {}; state.qi = 0; save("quiz", {}); save("qi", 0); return render(); }
+  if (t.dataset.menu !== undefined) { state.menu = Math.max(0, Math.min(MISSIONS.length - 1, +t.dataset.menu)); save("menu", state.menu); return render(); }
+  if (t.dataset.copy) return copy(t.dataset.copy);
+  if (t.id === "copyBuilt") return copy(builtPrompt());
+  if (t.id === "copyReview") {
+    const r = state.review;
+    return copy(`[BeAT 1차시 돌아보기]\n1. 확인이 필요했던 부분: ${r.q1}\n2. 가장 필요한 약속: ${r.q2}\n3. 다음에 해 볼 것: ${r.q3}`);
+  }
+});
+
+document.addEventListener("change", e => {
+  const t = e.target;
+  if (t.dataset.pledge !== undefined) {
+    const k = +t.dataset.pledge;
+    state.pledge = t.checked ? [...new Set([...state.pledge, k])] : state.pledge.filter(x => x !== k);
+    save("pledge", state.pledge); return render();
+  }
+  if (t.dataset.login !== undefined) {
+    const k = +t.dataset.login;
+    state.login = t.checked ? [...new Set([...state.login, k])] : state.login.filter(x => x !== k);
+    save("login", state.login); return renderChrome();
+  }
+  if (t.dataset.fact) { state.facts[t.dataset.fact] = t.checked; save("facts", state.facts); return render(); }
+  if (t.dataset.fmt || t.dataset.cond) {
+    const key = t.dataset.fmt ? "fmt" : "cond", v = t.dataset.fmt || t.dataset.cond;
+    state.build[key] = t.checked ? [...state.build[key], v] : state.build[key].filter(x => x !== v);
+    return updateBuilder();
+  }
+  if (t.id === "b-role") { state.build.role = t.value; return updateBuilder(); }
+  if (t.id === "b-subject") { state.build.subject = t.value; return updateBuilder(); }
+});
+
+document.addEventListener("input", e => {
+  const t = e.target;
+  if (t.id === "b-ctx") { state.build.ctx = t.value; return updateBuilder(); }
+  if (t.id === "b-ask") { state.build.ask = t.value; return updateBuilder(); }
+  if (t.id && t.id.startsWith("r-")) { state.review[t.id.slice(2)] = t.value; save("review", state.review); renderChrome(); }
+});
+
+render();
+</script>
+</body>
+</html>
