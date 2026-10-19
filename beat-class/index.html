@@ -781,12 +781,12 @@ function goStep(k) {
     toast(st.hint);
   }, 60);
 }
-function certReady() { return certSteps().every(st => st.ok) && state.cert.name.trim() && state.cert.sid.trim(); }
+function certReady() { return !!(state.cert.name.trim() && state.cert.sid.trim()); }
 function certBox() {
   const c = state.cert;
   return `<div class="box cert" id="certBox">
     <h3>교육 이수증 만들기</h3>
-    <p class="lede" style="font-size:14px">여섯 단계를 모두 마치고 이름과 학번을 쓰면, 오늘 한 실습을 한 장으로 정리한 이수증을 그림 파일(PNG)로 저장할 수 있어요.</p>
+    <p class="lede" style="font-size:14px">이름과 학번을 쓰면, 오늘 완료한 실습을 한 장으로 정리한 이수증을 그림 파일(PNG)로 저장할 수 있어요. 다 못 끝냈어도 괜찮아요. 완료한 단계만 이수증에 들어가요.</p>
     <ul class="checks cert-steps" id="certSteps"></ul>
     <div class="cert-inputs">
       <label class="field"><span>이름</span><input type="text" id="cert-name" maxlength="20" autocomplete="off" value="${esc(c.name)}" placeholder="예: 김비트"></label>
@@ -809,7 +809,10 @@ function updateCert() {
   btn.disabled = !certReady();
   const first = steps.findIndex(st => !st.ok), left = steps.filter(st => !st.ok).length;
   const msg = document.getElementById("certMsg");
-  msg.innerHTML = left ? `남은 단계 ${left}개 · <button class="linkish" data-gostep="${first}">첫 번째 남은 단계로 가기</button>` : (!state.cert.name.trim() || !state.cert.sid.trim()) ? "이름과 학번을 써 주세요" : "";
+  const done = steps.length - left;
+  msg.innerHTML = !certReady() ? "이름과 학번을 써 주세요" + (left ? ` · 남은 단계 ${left}개 · <button class="linkish" data-gostep="${first}">첫 번째 남은 단계로 가기</button>` : "")
+    : !done ? `아직 완료한 단계가 없어요. 지금 만들면 이름과 학번만 들어가요 · <button class="linkish" data-gostep="${first}">첫 단계 하러 가기</button>`
+    : left ? `완료한 ${done}단계만 이수증에 들어가요 · <button class="linkish" data-gostep="${first}">남은 단계 ${left}개 하러 가기</button>` : "여섯 단계를 모두 마쳤어요!";
 }
 
 function wrapLines(ctx, text, maxW) {
@@ -861,15 +864,23 @@ async function drawCert() {
   const score = QUIZ.filter((q, i) => state.quiz[i] === q.a).length;
   const done = [];
   MISSIONS.forEach((m, i) => m.items.forEach((it, j) => { if (itemDone(i, j)) done.push(`${m.menu} · ${it.title}`); }));
+  const st = certSteps(), doneCount = st.filter(s => s.ok).length, allDone = doneCount === st.length;
   const rows = [
-    ["AI 윤리 상황 퀴즈", `8문항 중 ${score}문항 정답`],
-    ["BeAT 안전 사용 약속", "개인정보 지키기 · 답변 확인하기 · 출처 밝히기 · 그대로 제출하지 않기 · 이상한 답변 알리기"],
-    ["BeAT 접속과 첫 질문", "로그인하고 메뉴 4개(수업GPT · 개인GPT · AI Agents · Custom AI) 둘러보기"],
-    ["좋은 질문 만들기", "역할 + 상황 + 요청 + 형식으로 질문 완성하기"],
-    ["메뉴별 실습", done.join("\n")],
-  ];
+    st[0].ok && ["AI 윤리 상황 퀴즈", `8문항 중 ${score}문항 정답`],
+    st[1].ok && ["BeAT 안전 사용 약속", "개인정보 지키기 · 답변 확인하기 · 출처 밝히기 · 그대로 제출하지 않기 · 이상한 답변 알리기"],
+    st[2].ok && ["BeAT 접속과 첫 질문", "로그인하고 메뉴 4개(수업GPT · 개인GPT · AI Agents · Custom AI) 둘러보기"],
+    st[3].ok && ["좋은 질문 만들기", "역할 + 상황 + 요청 + 형식으로 질문 완성하기"],
+    done.length && ["메뉴별 실습", done.join("\n")],
+  ].filter(Boolean);
   x.fillStyle = C.ink; x.font = `40px ${JUA}`; x.fillText("이수 내용", 120, 566);
+  x.textAlign = "right"; x.fillStyle = allDone ? "#4a8410" : C.pink; x.font = `700 26px ${BODY}`;
+  x.fillText(allDone ? "여섯 단계 모두 완료" : `여섯 단계 중 ${doneCount}단계 완료`, W - 120, 566);
+  x.textAlign = "left";
   let y = 600;
+  if (!rows.length) {
+    x.fillStyle = "#f7fafd"; x.fillRect(120, y, W - 240, 80); x.strokeStyle = C.line; x.lineWidth = 1; x.strokeRect(120, y, W - 240, 80);
+    x.fillStyle = C.muted; x.font = `26px ${BODY}`; x.fillText("아직 완료한 실습 단계가 없어요.", 144, y + 50); y += 80;
+  }
   rows.forEach(([k, v], i) => {
     x.font = `26px ${BODY}`;
     const lines = wrapLines(x, v, W - 240 - 330);
@@ -883,9 +894,8 @@ async function drawCert() {
   });
 
   // 돌아보기
-  y += 48;
-  x.fillStyle = C.ink; x.font = `40px ${JUA}`; x.fillText("나의 돌아보기", 120, y); y += 24;
-  const refl = [["확인이 필요했던 부분", state.review.q1], ["나에게 필요한 약속", state.review.q2], ["다음에 해 볼 것", state.review.q3]];
+  const refl = [["확인이 필요했던 부분", state.review.q1], ["나에게 필요한 약속", state.review.q2], ["다음에 해 볼 것", state.review.q3]].filter(([, v]) => v.trim());
+  if (refl.length) { y += 48; x.fillStyle = C.ink; x.font = `40px ${JUA}`; x.fillText("나의 돌아보기", 120, y); y += 24; }
   refl.forEach(([k, v]) => {
     x.font = `25px ${BODY}`;
     const lines = wrapLines(x, v.trim(), W - 240 - 72).slice(0, 2);
@@ -902,7 +912,9 @@ async function drawCert() {
   y += 40;
   x.fillStyle = C.line; x.fillRect(120, y, W - 240, 2); y += 60;
   x.fillStyle = C.ink; x.font = `30px ${BODY}`; x.textAlign = "left";
-  const stLines = wrapLines(x, "위 학생은 부산교육 AI 튜터 BeAT 활용 1차시 수업에서 AI 윤리와 안전 사용 약속을 익히고, BeAT 메뉴별 실습을 모두 마쳤기에 이 이수증을 드립니다.", W - 240 - (team ? 400 : 0));
+  const stLines = wrapLines(x, allDone
+    ? "위 학생은 부산교육 AI 튜터 BeAT 활용 1차시 수업에서 AI 윤리와 안전 사용 약속을 익히고, BeAT 메뉴별 실습을 모두 마쳤기에 이 이수증을 드립니다."
+    : "위 학생은 부산교육 AI 튜터 BeAT 활용 1차시 수업에 참여하여 위의 실습 활동을 마쳤기에 이 이수증을 드립니다.", W - 240 - (team ? 400 : 0));
   stLines.forEach((ln, n) => x.fillText(ln, 120, y + n * 46));
   let artBottom = y;
   if (team) { const w = 370, h = w * team.height / team.width; x.drawImage(team, W - 120 - w, y - 40, w, h); artBottom = y - 40 + h; }
@@ -911,8 +923,8 @@ async function drawCert() {
   x.fillStyle = C.muted; x.font = `20px ${BODY}`;
   x.fillText("학생이 실습 사이트에서 직접 만든 수업 참여 확인서입니다. 기관이 발급하는 공식 증명서가 아닙니다.", 120, y + 38);
 
-  // 내용 높이에 맞춰 자르고(최소 A4 비율) 바깥 테두리
-  const H = Math.max(1754, Math.ceil(y + 38 + 90));
+  // 내용 높이에 맞춰 자르고 바깥 테두리
+  const H = Math.ceil(y + 38 + 90);
   const out = document.createElement("canvas"); out.width = W; out.height = H;
   const o = out.getContext("2d");
   o.fillStyle = "#ffffff"; o.fillRect(0, 0, W, H);
