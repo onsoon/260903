@@ -218,6 +218,12 @@ footer.band { margin-top: 28px; padding-top: 14px; border-top: 6px solid transpa
 .cert-steps li { display: flex; gap: 8px; align-items: center; font-size: 14px; padding: 6px 10px; border-radius: 10px; background: var(--bg); }
 .cert-steps .mark { font-size: 12px; font-weight: 700; padding: 1px 8px; border-radius: 999px; background: var(--line); color: var(--muted); flex: none; }
 .cert-steps li.ok .mark { background: var(--green-soft); color: var(--green); }
+.cert-steps li.todo { background: var(--pink-soft); }
+.cert-steps .st-text { flex: 1; min-width: 0; }
+.cert-steps .st-text small { display: block; color: var(--pink); font-size: 12.5px; }
+.cert-steps .go { flex: none; }
+.linkish { border: 0; background: none; padding: 0; color: var(--blue); text-decoration: underline; cursor: pointer; font: inherit; }
+.nudge { outline: 3px solid var(--pink) !important; outline-offset: 3px; border-radius: 10px; transition: outline-color .3s; }
 .cert-inputs { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .cert-img { width: 100%; max-width: 520px; height: auto; border: 1px solid var(--line); border-radius: 12px; display: block; margin: 4px 0 8px; }
 .toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(20px + env(safe-area-inset-bottom, 0px)); background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 10px; font-size: 14px; z-index: 20; }
@@ -735,16 +741,47 @@ const views = {
 // 교육 이수증: 여섯 단계를 모두 마치면 이름·학번을 넣어 한 장짜리 PNG로 저장
 function certSteps() {
   const b = state.build, r = state.review;
+  const quizN = Object.keys(state.quiz).length;
+  const buildMiss = [["역할", !!b.role], ["상황", b.ctx.trim().length > 4], ["요청", b.ask.trim().length > 4], ["형식", b.fmt.length > 0]].filter(([, ok]) => !ok).map(([n]) => n);
+  const otherDone = MISSIONS.some((_, i) => i > 0 && missionDone(i));
+  const reviewMiss = ["q1", "q2", "q3"].filter(k => !r[k].trim());
   return [
-    ["윤리 퀴즈 8문항 풀기", Object.keys(state.quiz).length === QUIZ.length],
-    ["안전 사용 약속 5가지 체크", state.pledge.length === PLEDGE.length],
-    ["BeAT 접속하고 첫 질문 보내기", state.login.length === STEPS.length],
-    ["질문 만들기: 역할·상황·요청·형식 모두 채우기", !!b.role && b.ctx.trim().length > 4 && b.ask.trim().length > 4 && b.fmt.length > 0],
-    ["메뉴별 실습: 수업GPT + 다른 메뉴 하나 이상", missionDone(0) && MISSIONS.some((_, i) => i > 0 && missionDone(i))],
-    ["돌아보기 세 줄 쓰기", !!(r.q1.trim() && r.q2.trim() && r.q3.trim())],
+    { label: "윤리 퀴즈 8문항 풀기", ok: quizN === QUIZ.length, hint: `${quizN}/8문항 풀었어요`, tab: "quiz" },
+    { label: "안전 사용 약속 5가지 체크", ok: state.pledge.length === PLEDGE.length, hint: `${state.pledge.length}/5개 체크했어요`, tab: "pledge" },
+    { label: "BeAT 접속하고 첫 질문 보내기", ok: state.login.length === STEPS.length, hint: `${state.login.length}/5단계 체크했어요`, tab: "login" },
+    { label: "질문 만들기: 역할·상황·요청·형식 모두 채우기", ok: !buildMiss.length, hint: `비어 있는 칸: ${buildMiss.join(", ")}`, tab: "build" },
+    { label: "메뉴별 실습: 수업GPT + 다른 메뉴 하나 이상", ok: missionDone(0) && otherDone,
+      hint: !missionDone(0) ? "수업GPT 실습의 확인 체크를 모두 해야 해요" : "개인GPT · AI Agents · Custom AI 중 하나의 확인 체크를 모두 해야 해요", tab: "mission" },
+    { label: "돌아보기 세 줄 쓰기", ok: !reviewMiss.length, hint: `비어 있는 줄: ${reviewMiss.map(k => k.slice(1) + "번").join(", ")}`, tab: "review" },
   ];
 }
-function certReady() { return certSteps().every(([, ok]) => ok) && state.cert.name.trim() && state.cert.sid.trim(); }
+// 안 한 부분으로 이동: 탭을 바꾸고, 빠진 곳(문항·칸·메뉴)을 찾아 보여 준다
+function goStep(k) {
+  const st = certSteps()[k];
+  if (!st || st.ok) return;
+  if (st.tab === "quiz") { const i = QUIZ.findIndex((_, n) => state.quiz[n] === undefined); state.qi = i < 0 ? 0 : i; save("qi", state.qi); }
+  if (st.tab === "mission") {
+    let m = 0;
+    if (missionDone(0)) { const i = MISSIONS.findIndex((_, n) => n > 0 && MISSIONS[n].items.some((_, j) => MISSIONS[n].items[j].check.some((_, c) => state.facts[`${n}-${j}:${c}`]))); m = i > 0 ? i : 1; }
+    state.menu = m; save("menu", m);
+  }
+  if (st.tab !== "review") go(st.tab);
+  setTimeout(() => {
+    let el = null;
+    if (st.tab === "pledge") el = document.querySelector("[data-pledge]:not(:checked)");
+    if (st.tab === "login") el = document.querySelector("[data-login]:not(:checked)");
+    if (st.tab === "build") {
+      const b = state.build;
+      el = !b.ctx.trim() || b.ctx.trim().length <= 4 ? $("#b-ctx") : (!b.ask.trim() || b.ask.trim().length <= 4) ? $("#b-ask") : document.querySelector("[data-fmt]");
+    }
+    if (st.tab === "mission") el = document.querySelector(".mission [data-fact]:not(:checked)");
+    if (st.tab === "review") el = ["q1", "q2", "q3"].map(q => $("#r-" + q)).find(t => t && !t.value.trim());
+    if (st.tab === "quiz") el = document.querySelector(".quiz-card");
+    if (el) { el.scrollIntoView({ block: "center", behavior: "smooth" }); if (el.focus) el.focus({ preventScroll: true }); el.classList.add("nudge"); setTimeout(() => el.classList.remove("nudge"), 2200); }
+    toast(st.hint);
+  }, 60);
+}
+function certReady() { return certSteps().every(st => st.ok) && state.cert.name.trim() && state.cert.sid.trim(); }
 function certBox() {
   const c = state.cert;
   return `<div class="box cert" id="certBox">
@@ -766,11 +803,13 @@ function certBox() {
 function updateCert() {
   const ul = document.getElementById("certSteps");
   if (!ul) return;
-  ul.innerHTML = certSteps().map(([t, ok]) => `<li class="${ok ? "ok" : ""}"><span class="mark">${ok ? "완료" : "아직"}</span>${t}</li>`).join("");
+  const steps = certSteps();
+  ul.innerHTML = steps.map((st, k) => `<li class="${st.ok ? "ok" : "todo"}"><span class="mark">${st.ok ? "완료" : "아직"}</span><span class="st-text">${st.label}${st.ok ? "" : `<small>${st.hint}</small>`}</span>${st.ok ? "" : `<button class="btn small go" data-gostep="${k}">하러 가기</button>`}</li>`).join("");
   const btn = document.getElementById("makeCert");
   btn.disabled = !certReady();
-  const left = certSteps().filter(([, ok]) => !ok).length;
-  document.getElementById("certMsg").textContent = left ? `남은 단계 ${left}개` : (!state.cert.name.trim() || !state.cert.sid.trim()) ? "이름과 학번을 써 주세요" : "";
+  const first = steps.findIndex(st => !st.ok), left = steps.filter(st => !st.ok).length;
+  const msg = document.getElementById("certMsg");
+  msg.innerHTML = left ? `남은 단계 ${left}개 · <button class="linkish" data-gostep="${first}">첫 번째 남은 단계로 가기</button>` : (!state.cert.name.trim() || !state.cert.sid.trim()) ? "이름과 학번을 써 주세요" : "";
 }
 
 function wrapLines(ctx, text, maxW) {
@@ -1060,7 +1099,7 @@ function render() {
 function go(tab) { state.tab = tab; save("tab", tab); render(); window.scrollTo({ top: 0 }); }
 
 document.addEventListener("click", e => {
-  const t = e.target.closest("[data-tab],[data-go],[data-ox],[data-qnav],[data-copy],[data-menu],[data-reset],[data-dl],[data-copyfile],[data-preset],#copyBuilt,#copyReview,#copyArt,#clearData,#makeCert,#saveCert");
+  const t = e.target.closest("[data-tab],[data-go],[data-ox],[data-qnav],[data-copy],[data-menu],[data-reset],[data-dl],[data-copyfile],[data-preset],#copyBuilt,#copyReview,#copyArt,#clearData,#makeCert,#saveCert,[data-gostep]");
   if (!t) return;
   if (t.dataset.tab) return go(t.dataset.tab);
   if (t.dataset.go) return go(t.dataset.go);
@@ -1074,6 +1113,7 @@ document.addEventListener("click", e => {
   if (t.dataset.copy) return copy(t.dataset.copy);
   if (t.id === "copyBuilt") return copy(builtPrompt());
   if (t.id === "copyArt") return copy(artPrompt());
+  if (t.dataset.gostep !== undefined) return goStep(+t.dataset.gostep);
   if (t.id === "makeCert") {
     if (!certReady()) return updateCert();
     t.disabled = true; $("#certMsg").textContent = "만드는 중…";
