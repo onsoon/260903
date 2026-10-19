@@ -214,6 +214,12 @@ footer.band { margin-top: 28px; padding-top: 14px; border-top: 6px solid transpa
 .policy ul { margin: 8px 0 4px; padding-left: 18px; display: grid; gap: 4px; line-height: 1.55; }
 .clear-msg { font-size: 12.5px; color: var(--pink); }
 .copy { font-size: 12px; }
+.cert { border: 2px solid var(--brand); }
+.cert-steps li { display: flex; gap: 8px; align-items: center; font-size: 14px; padding: 6px 10px; border-radius: 10px; background: var(--bg); }
+.cert-steps .mark { font-size: 12px; font-weight: 700; padding: 1px 8px; border-radius: 999px; background: var(--line); color: var(--muted); flex: none; }
+.cert-steps li.ok .mark { background: var(--green-soft); color: var(--green); }
+.cert-inputs { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.cert-img { width: 100%; max-width: 520px; height: auto; border: 1px solid var(--line); border-radius: 12px; display: block; margin: 4px 0 8px; }
 .toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(20px + env(safe-area-inset-bottom, 0px)); background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 10px; font-size: 14px; z-index: 20; }
 @media (prefers-reduced-motion: no-preference) { .panel { animation: in .2s ease-out; } @keyframes in { from { opacity: .6; transform: translateY(4px); } } }
 </style>
@@ -515,6 +521,7 @@ const state = {
   agentTpl: load("agentTpl", 0),
   menu: load("menu", 0),
   review: load("review", { q1: "", q2: "", q3: "" }),
+  cert: load("cert", { name: "", sid: "" }),
 };
 if (location.hash && TABS.some(t => t.id === location.hash.slice(1))) state.tab = location.hash.slice(1);
 
@@ -720,9 +727,178 @@ const views = {
           ].map(([a, b]) => `<tr><td style="padding:8px;border-bottom:1px solid var(--line);white-space:nowrap;font-weight:700;vertical-align:top">${a}</td><td style="padding:8px;border-bottom:1px solid var(--line)">${b}</td></tr>`).join("")}</tbody>
         </table></div>
         <small style="color:var(--muted)">접속 <span class="url">${BEAT_URL}</span> · 문의 yb3447@pusan.ac.kr (부산대학교 AI융합교육원)</small>
-      </div>`;
+      </div>
+      ${certBox()}`;
   },
 };
+
+// 교육 이수증: 여섯 단계를 모두 마치면 이름·학번을 넣어 한 장짜리 PNG로 저장
+function certSteps() {
+  const b = state.build, r = state.review;
+  return [
+    ["윤리 퀴즈 8문항 풀기", Object.keys(state.quiz).length === QUIZ.length],
+    ["안전 사용 약속 5가지 체크", state.pledge.length === PLEDGE.length],
+    ["BeAT 접속하고 첫 질문 보내기", state.login.length === STEPS.length],
+    ["질문 만들기: 역할·상황·요청·형식 모두 채우기", !!b.role && b.ctx.trim().length > 4 && b.ask.trim().length > 4 && b.fmt.length > 0],
+    ["메뉴별 실습: 수업GPT + 다른 메뉴 하나 이상", missionDone(0) && MISSIONS.some((_, i) => i > 0 && missionDone(i))],
+    ["돌아보기 세 줄 쓰기", !!(r.q1.trim() && r.q2.trim() && r.q3.trim())],
+  ];
+}
+function certReady() { return certSteps().every(([, ok]) => ok) && state.cert.name.trim() && state.cert.sid.trim(); }
+function certBox() {
+  const c = state.cert;
+  return `<div class="box cert" id="certBox">
+    <h3>교육 이수증 만들기</h3>
+    <p class="lede" style="font-size:14px">여섯 단계를 모두 마치고 이름과 학번을 쓰면, 오늘 한 실습을 한 장으로 정리한 이수증을 그림 파일(PNG)로 저장할 수 있어요.</p>
+    <ul class="checks cert-steps" id="certSteps"></ul>
+    <div class="cert-inputs">
+      <label class="field"><span>이름</span><input type="text" id="cert-name" maxlength="20" autocomplete="off" value="${esc(c.name)}" placeholder="예: 김비트"></label>
+      <label class="field"><span>학번</span><input type="text" id="cert-sid" maxlength="12" autocomplete="off" inputmode="numeric" value="${esc(c.sid)}" placeholder="예: 10315"></label>
+    </div>
+    <small style="color:var(--muted)">이름과 학번은 이 기기에만 저장되고 어디로도 보내지 않아요. 이수증 파일에만 들어가요.</small>
+    <div class="row"><button class="btn primary" id="makeCert">이수증 만들기</button><span class="clear-msg" id="certMsg" aria-live="polite"></span></div>
+    <div id="certOut" hidden>
+      <img id="certImg" alt="교육 이수증 미리보기" class="cert-img">
+      <div class="row"><button class="btn primary" id="saveCert">PNG로 저장</button></div>
+    </div>
+  </div>`;
+}
+function updateCert() {
+  const ul = document.getElementById("certSteps");
+  if (!ul) return;
+  ul.innerHTML = certSteps().map(([t, ok]) => `<li class="${ok ? "ok" : ""}"><span class="mark">${ok ? "완료" : "아직"}</span>${t}</li>`).join("");
+  const btn = document.getElementById("makeCert");
+  btn.disabled = !certReady();
+  const left = certSteps().filter(([, ok]) => !ok).length;
+  document.getElementById("certMsg").textContent = left ? `남은 단계 ${left}개` : (!state.cert.name.trim() || !state.cert.sid.trim()) ? "이름과 학번을 써 주세요" : "";
+}
+
+function wrapLines(ctx, text, maxW) {
+  const out = [];
+  for (const para of text.split("\n")) {
+    let line = "";
+    for (const word of para.split(" ")) {
+      const next = line ? line + " " + word : word;
+      if (ctx.measureText(next).width <= maxW) { line = next; continue; }
+      if (line) out.push(line);
+      line = "";
+      for (const ch of word) {
+        if (ctx.measureText(line + ch).width > maxW && line) { out.push(line); line = ""; }
+        line += ch;
+      }
+    }
+    out.push(line);
+  }
+  return out;
+}
+function loadImg(src) { return new Promise(res => { const im = new Image(); im.onload = () => res(im); im.onerror = () => res(null); im.src = src; }); }
+let certBlob = null;
+async function drawCert() {
+  try { await Promise.all(['48px "Jua"', '700 28px "Noto Sans KR"', '28px "Noto Sans KR"'].map(f => document.fonts.load(f))); } catch {}
+  const W = 1240, cv = document.createElement("canvas");
+  cv.width = W; cv.height = 2600;
+  const x = cv.getContext("2d");
+  const C = { ink: "#1f2b4d", muted: "#5b6785", brand: "#4490d1", sky: "#5dcbf1", pink: "#d33d68", soft: "#e6f6fd", line: "#dfe7f1" };
+  const JUA = '"Jua", "Noto Sans KR", sans-serif', BODY = '"Noto Sans KR", "Malgun Gothic", sans-serif';
+  const round = (X, Y, w, h, r) => { x.beginPath(); x.moveTo(X + r, Y); x.arcTo(X + w, Y, X + w, Y + h, r); x.arcTo(X + w, Y + h, X, Y + h, r); x.arcTo(X, Y + h, X, Y, r); x.arcTo(X, Y, X + w, Y, r); x.closePath(); };
+
+  x.fillStyle = "#ffffff"; x.fillRect(0, 0, W, cv.height);
+  // 머리 띠
+  const g = x.createLinearGradient(58, 0, W - 58, 0); g.addColorStop(0, C.sky); g.addColorStop(1, C.brand);
+  x.fillStyle = g; round(58, 58, W - 116, 230, 28); x.fill(); x.fillRect(58, 200, W - 116, 88);
+  x.fillStyle = "#ffffff"; x.textAlign = "center";
+  x.font = `700 30px ${BODY}`; x.fillText("부산교육 AI 튜터 BeAT 활용 수업 · 1차시 (45분)", W / 2, 128);
+  x.font = `96px ${JUA}`; x.fillText("교육 이수증", W / 2, 240);
+
+  // 이름·학번·날짜
+  const d = new Date(), date = `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일`;
+  x.textAlign = "left"; x.fillStyle = C.soft; round(120, 340, W - 240, 150, 24); x.fill();
+  const field = (label, val, X) => { x.fillStyle = C.muted; x.font = `700 26px ${BODY}`; x.fillText(label, X, 400); x.fillStyle = C.ink; x.font = `42px ${JUA}`; x.fillText(val, X, 458); };
+  field("이름", state.cert.name.trim().slice(0, 12), 160);
+  field("학번", state.cert.sid.trim().slice(0, 12), 500);
+  field("이수일", date, 760);
+
+  // 이수 내용
+  const score = QUIZ.filter((q, i) => state.quiz[i] === q.a).length;
+  const done = [];
+  MISSIONS.forEach((m, i) => m.items.forEach((it, j) => { if (itemDone(i, j)) done.push(`${m.menu} · ${it.title}`); }));
+  const rows = [
+    ["AI 윤리 상황 퀴즈", `8문항 중 ${score}문항 정답`],
+    ["BeAT 안전 사용 약속", "개인정보 지키기 · 답변 확인하기 · 출처 밝히기 · 그대로 제출하지 않기 · 이상한 답변 알리기"],
+    ["BeAT 접속과 첫 질문", "로그인하고 메뉴 4개(수업GPT · 개인GPT · AI Agents · Custom AI) 둘러보기"],
+    ["좋은 질문 만들기", "역할 + 상황 + 요청 + 형식으로 질문 완성하기"],
+    ["메뉴별 실습", done.join("\n")],
+  ];
+  x.fillStyle = C.ink; x.font = `40px ${JUA}`; x.fillText("이수 내용", 120, 566);
+  let y = 600;
+  rows.forEach(([k, v], i) => {
+    x.font = `26px ${BODY}`;
+    const lines = wrapLines(x, v, W - 240 - 330);
+    const h = Math.max(70, 28 + lines.length * 38);
+    x.fillStyle = i % 2 ? "#ffffff" : "#f7fafd"; x.fillRect(120, y, W - 240, h);
+    x.strokeStyle = C.line; x.lineWidth = 1; x.strokeRect(120, y, W - 240, h);
+    x.fillStyle = C.brand; x.font = `700 26px ${BODY}`; x.fillText(k, 144, y + 44);
+    x.fillStyle = C.ink; x.font = `26px ${BODY}`;
+    lines.forEach((ln, n) => x.fillText(ln, 450, y + 44 + n * 38));
+    y += h;
+  });
+
+  // 돌아보기
+  y += 48;
+  x.fillStyle = C.ink; x.font = `40px ${JUA}`; x.fillText("나의 돌아보기", 120, y); y += 24;
+  const refl = [["확인이 필요했던 부분", state.review.q1], ["나에게 필요한 약속", state.review.q2], ["다음에 해 볼 것", state.review.q3]];
+  refl.forEach(([k, v]) => {
+    x.font = `25px ${BODY}`;
+    const lines = wrapLines(x, v.trim(), W - 240 - 72).slice(0, 2);
+    if (wrapLines(x, v.trim(), W - 240 - 72).length > 2) lines[1] = lines[1].slice(0, -1) + "…";
+    const h = 58 + lines.length * 36;
+    x.fillStyle = "#fde8ee"; round(120, y + 12, W - 240, h, 18); x.fill();
+    x.fillStyle = C.pink; x.font = `700 23px ${BODY}`; x.fillText(k, 156, y + 50);
+    x.fillStyle = C.ink; x.font = `25px ${BODY}`; lines.forEach((ln, n) => x.fillText(ln, 156, y + 88 + n * 36));
+    y += h + 14;
+  });
+
+  // 확인 문구와 캐릭터: 돌아보기 아래로 이어서
+  const team = CHARS.team ? await loadImg(CHARS.team.src) : null;
+  y += 40;
+  x.fillStyle = C.line; x.fillRect(120, y, W - 240, 2); y += 60;
+  x.fillStyle = C.ink; x.font = `30px ${BODY}`; x.textAlign = "left";
+  const stLines = wrapLines(x, "위 학생은 부산교육 AI 튜터 BeAT 활용 1차시 수업에서 AI 윤리와 안전 사용 약속을 익히고, BeAT 메뉴별 실습을 모두 마쳤기에 이 이수증을 드립니다.", W - 240 - (team ? 400 : 0));
+  stLines.forEach((ln, n) => x.fillText(ln, 120, y + n * 46));
+  let artBottom = y;
+  if (team) { const w = 370, h = w * team.height / team.width; x.drawImage(team, W - 120 - w, y - 40, w, h); artBottom = y - 40 + h; }
+  y = Math.max(y + stLines.length * 46, artBottom) + 50;
+  x.fillStyle = C.brand; x.font = `44px ${JUA}`; x.fillText("BeAT 실습실", 120, y);
+  x.fillStyle = C.muted; x.font = `20px ${BODY}`;
+  x.fillText("학생이 실습 사이트에서 직접 만든 수업 참여 확인서입니다. 기관이 발급하는 공식 증명서가 아닙니다.", 120, y + 38);
+
+  // 내용 높이에 맞춰 자르고(최소 A4 비율) 바깥 테두리
+  const H = Math.max(1754, Math.ceil(y + 38 + 90));
+  const out = document.createElement("canvas"); out.width = W; out.height = H;
+  const o = out.getContext("2d");
+  o.fillStyle = "#ffffff"; o.fillRect(0, 0, W, H);
+  o.drawImage(cv, 0, 0, W, H, 0, 0, W, H);
+  const oround = (X, Y, w, h, r) => { o.beginPath(); o.moveTo(X + r, Y); o.arcTo(X + w, Y, X + w, Y + h, r); o.arcTo(X + w, Y + h, X, Y + h, r); o.arcTo(X, Y + h, X, Y, r); o.arcTo(X, Y, X + w, Y, r); o.closePath(); };
+  o.strokeStyle = C.brand; o.lineWidth = 6; oround(40, 40, W - 80, H - 80, 36); o.stroke();
+  o.strokeStyle = C.sky; o.lineWidth = 2; oround(58, 58, W - 116, H - 116, 28); o.stroke();
+  return new Promise(res => out.toBlob(b => res(b), "image/png"));
+}
+async function saveBlob(filename, blob) {
+  if (window.claude && typeof window.claude.use === "function") {
+    dlPromise = dlPromise || window.claude.use("downloads");
+    const dl = await dlPromise;
+    if (dl) {
+      try { await dl.save({ filename, data: blob }); toast("이수증을 저장했어요."); }
+      catch (e) { toast(e && e.code === "declined" ? "저장을 취소했어요." : "이 화면에서는 저장이 막혀 있어요. 미리보기 그림을 길게 눌러 저장하세요."); }
+      return;
+    }
+    return toast("이 화면에서는 저장이 막혀 있어요. 미리보기 그림을 길게 눌러 저장하세요.");
+  }
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob); a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+}
 
 function utf8Bytes(str) { return new TextEncoder().encode(str).length; }
 function agentBuilder() {
@@ -878,12 +1054,13 @@ function render() {
   renderChrome();
   $("#panels").innerHTML = `<section class="panel" role="tabpanel" aria-labelledby="tab-${state.tab}">${views[state.tab]()}</section>`;
   if (state.tab === "build") updateBuilder();
+  if (state.tab === "review") updateCert();
 }
 
 function go(tab) { state.tab = tab; save("tab", tab); render(); window.scrollTo({ top: 0 }); }
 
 document.addEventListener("click", e => {
-  const t = e.target.closest("[data-tab],[data-go],[data-ox],[data-qnav],[data-copy],[data-menu],[data-reset],[data-dl],[data-copyfile],[data-preset],#copyBuilt,#copyReview,#copyArt,#clearData");
+  const t = e.target.closest("[data-tab],[data-go],[data-ox],[data-qnav],[data-copy],[data-menu],[data-reset],[data-dl],[data-copyfile],[data-preset],#copyBuilt,#copyReview,#copyArt,#clearData,#makeCert,#saveCert");
   if (!t) return;
   if (t.dataset.tab) return go(t.dataset.tab);
   if (t.dataset.go) return go(t.dataset.go);
@@ -897,6 +1074,22 @@ document.addEventListener("click", e => {
   if (t.dataset.copy) return copy(t.dataset.copy);
   if (t.id === "copyBuilt") return copy(builtPrompt());
   if (t.id === "copyArt") return copy(artPrompt());
+  if (t.id === "makeCert") {
+    if (!certReady()) return updateCert();
+    t.disabled = true; $("#certMsg").textContent = "만드는 중…";
+    drawCert().then(b => {
+      certBlob = b; t.disabled = false; $("#certMsg").textContent = "";
+      const img = $("#certImg"); if (img.src) URL.revokeObjectURL(img.src);
+      img.src = URL.createObjectURL(b); $("#certOut").hidden = false;
+      img.scrollIntoView({ block: "nearest" });
+    });
+    return;
+  }
+  if (t.id === "saveCert") {
+    if (!certBlob) return;
+    const safe = s => s.trim().replace(/[\\/:*?"<>|\s]+/g, "_");
+    return saveBlob(`BeAT_이수증_${safe(state.cert.sid)}_${safe(state.cert.name)}.png`, certBlob);
+  }
   if (t.id === "clearData") {
     const msg = $("#clearMsg");
     if (!t.dataset.armed) { t.dataset.armed = "1"; t.textContent = "한 번 더 누르면 지워져요"; msg.textContent = "퀴즈 답, 체크, 쓴 글이 모두 지워져요."; return; }
@@ -949,7 +1142,8 @@ document.addEventListener("input", e => {
   const t = e.target;
   if (t.id === "b-ctx") { state.build.ctx = t.value; return updateBuilder(); }
   if (t.id === "b-ask") { state.build.ask = t.value; return updateBuilder(); }
-  if (t.id && t.id.startsWith("r-")) { state.review[t.id.slice(2)] = t.value; save("review", state.review); renderChrome(); }
+  if (t.id && t.id.startsWith("r-")) { state.review[t.id.slice(2)] = t.value; save("review", state.review); renderChrome(); updateCert(); }
+  if (t.id === "cert-name" || t.id === "cert-sid") { state.cert[t.id === "cert-name" ? "name" : "sid"] = t.value; save("cert", state.cert); updateCert(); }
 });
 
 render();
