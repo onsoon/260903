@@ -64,9 +64,13 @@ const ART = {
 ''')
 # 3. 회원가입 3단계
 block("const STEPS = [", "const SPACES = [", '''const STEPS = [
-  { t: "주소창에 BeAT 주소 입력하기", s: `<span class="url">${BEAT_URL}</span> · 리플릿의 QR 코드로도 들어갈 수 있어요.` },
-  { t: "로그인 화면에서 ‘교육디지털원패스’ 고르기", s: "미리 만든 계정은 없어요. 내 계정은 내가 직접 만들어요." },
-  { t: "학교에서 받은 마이크로소프트 계정으로 회원가입하고, 위쪽 메뉴 4개 찾기", s: "개인GPT · 수업GPT · AI Agents · Custom AI가 보이면 성공! 먼저 끝냈으면 옆 친구를 도와주세요." },
+  { t: "BeAT 첫 화면에서 ‘교육디지털원패스’ 로그인 고르기", s: `<span class="url">${BEAT_URL}</span> · 왼쪽 ‘Microsoft로 로그인’이 아니라 <b>오른쪽 교육디지털원패스</b>예요.` },
+  { t: "사용자 유형 ‘학생’ → 학생 로그인 화면 아래 ‘회원가입’", s: "‘교직원’을 누르면 처음부터 다시. 아직 아이디가 없으니 로그인 말고 작은 글자 ‘회원가입’을 눌러요." },
+  { t: "① 약관 동의: 4개 모두 체크 → 다음", s: "마지막 <b>‘개인정보 제3자 제공 동의’</b>를 빼면 BeAT를 쓸 수 없어요. (내 정보를 연동 서비스인 BeAT에 넘겨주는 데 대한 동의)" },
+  { t: "② 학적 정보: 학교명 · 이름 · 생년월일 · 학년 · 반 · 번호", s: "나이스(NEIS) 기록과 <b>한 글자라도</b> 다르면 가입이 안 돼요. 이름 띄어쓰기, 반·번호를 다시 확인!" },
+  { t: "③ 본인인증: 내 명의 휴대폰 또는 아이핀(I-PIN)", s: "부모님 명의 휴대폰은 안 돼요. 둘 다 없으면 손을 들어 알려 주세요 → 담임 선생님 대리 등록" },
+  { t: "④ 계정 정보: 아이디 · 비밀번호 · 이메일 정하기", s: "수첩에 적어 두세요. 비밀번호는 친구에게도, AI 프롬프트에도 <b>절대</b> 알려 주지 않아요." },
+  { t: "⑤ 가입 완료 → 학생 로그인 → BeAT 이용 동의 → 위쪽 메뉴 4개 찾기", s: "아이디/비밀번호 또는 간편인증으로 로그인해요. 개인GPT · 수업GPT · AI Agents · Custom AI가 보이면 성공! 먼저 끝냈으면 옆 친구를 도와주세요." },
 ];
 ''')
 block("const SPACES = [", "// 메뉴별 실습", '''const SPACES = [
@@ -74,6 +78,28 @@ block("const SPACES = [", "// 메뉴별 실습", '''const SPACES = [
   ["수업GPT", "선생님 교재 안에서만 답하고, 출처를 보여 줘요."],
   ["AI Agents", "나만의 챗봇을 만들고 링크로 공유해요. 오늘의 중심 실습!"],
   ["Custom AI", "문서번역, 자기소개 멘토링 같은 전용 도구예요."],
+];
+const TROUBLE = [
+  ["학적 정보가 맞지 않대요", "이름 띄어쓰기 · 생년월일 · 학년/반/번호를 다시 확인. 전학 왔다면 선생님께"],
+  ["본인인증이 안 돼요", "휴대폰이 부모님 명의인지 확인 → 아이핀(I-PIN)으로, 그래도 안 되면 담임 선생님 대리 등록"],
+  ["인증번호가 안 와요", "전화번호를 확인하고 다시 요청. 시간이 지나면 새 번호를 받아야 해요"],
+  ["이미 가입된 사용자래요", "새로 만들지 말고 ‘아이디 찾기’ · ‘비밀번호 찾기’"],
+  ["가입했는데 BeAT가 안 열려요", "첫 화면에서 ‘교육디지털원패스’ → ‘학생’으로 로그인했는지 확인"],
+];
+const GPT_VS = [
+  ["어디서 답을?", "AI가 원래 알고 있는 넓은 지식", "선생님이 올린 교재 안에서만"],
+  ["비유하면", "아는 게 많은 친구", "교과서를 펴 놓고 답하는 선생님"],
+  ["출처", "대부분 없음 → 내가 확인해야 해요", "교재 어디서 찾았는지 보여 줘요"],
+  ["이럴 때 좋아요", "개념 설명, 아이디어, 내 파일 요약", "시험 범위 공부, 학습지·수업 질문"],
+  ["조심할 점", "그럴듯하게 틀릴 수 있어요", "교재에 없는 건 답을 못 할 수 있어요"],
+];
+const SUBJECTS = [
+  ["수학", "공식은 아는데 못 쓰겠어", "등차수열의 합 공식이 왜 그렇게 되는지 1부터 100까지 더하는 예시로 설명해 줘. 비슷한 문제 1개를 내고, 내가 풀면 틀린 단계만 알려 줘."],
+  ["영어", "긴 문장, 어디서 끊지?", "아래 문장을 주어·동사·수식어로 끊어 표시하고 직역과 자연스러운 해석을 나란히 보여 줘. 내가 먼저 해석해 볼게.\\n[문장]"],
+  ["국어", "화자의 정서를 못 찾겠어", "[작품명]에서 화자의 정서가 드러나는 시어 3개를 찾고, 근거가 되는 시구와 함께 설명해 줘. 해석이 갈리면 ‘다른 해석 가능’이라고 표시해 줘."],
+  ["과학", "그래프만 나오면 막혀", "속도-시간 그래프에서 기울기와 넓이가 뜻하는 것을 자전거 타기 예시로 설명해 줘. 연습 문제 2개를 힌트와 함께 단계별로 내 줘."],
+  ["한국사·사회", "사건 순서가 헷갈려", "[단원]의 주요 사건 6개를 시간 순서 표로 정리하고, 원인 → 결과를 한 줄씩 써 줘. 연도 옆에 ‘교과서 확인’ 칸을 만들어 줘."],
+  ["정보", "코드 오류를 모르겠어", "아래 파이썬 코드에서 오류가 나는 줄과 이유만 알려 줘. 고친 코드는 바로 주지 말고, 내가 고치면 확인해 줘.\\n[코드]"],
 ];
 ''')
 # 5. 메뉴별 실습: AI Agents 중심, 다른 메뉴는 하나씩
@@ -174,15 +200,41 @@ R("${artBox()}`;\n  },", '''${artBox()}
 R('head("login", "BeAT 접속하고 첫 질문 보내기", "한 단계씩 따라 하고 끝나면 체크하세요.")',
   'head("login", "회원가입: 내 계정은 내가 만들어요", "한 단계씩 따라 하고 끝나면 체크하세요. 먼저 끝낸 친구는 옆 친구를 도와주세요.")')
 R('<button class="btn" data-copy="BeAT로 공부할 때 무엇을 할 수 있어? 고등학생 예시로 3줄로 알려 줘.">첫 질문 복사</button>', "")
-R("로그인이 안 되면 계정을 새로 만들지 말고 선생님께 알려 주세요. 다른 사람 계정으로 로그인하지 않아요.",
-  "막히면 옆 친구와 화면을 비교해 보고, 그래도 안 되면 손을 들어 선생님을 불러요. 다른 사람 계정으로 로그인하지 않아요.")
+R("로그인이 안 되면 계정을 새로 만들지 말고 선생님께 알려 주세요. 다른 사람 계정으로 로그인하지 않아요.</div>",
+  '''막히면 옆 친구와 화면을 비교해 보고, 그래도 안 되면 손을 들어 선생님을 불러요. 다른 사람 계정으로 로그인하지 않아요.</div>
+      <div class="box">
+        <h3>막혔을 때 이렇게 해결해요</h3>
+        ${TROUBLE.map(([a, b]) => `<div class="compare"><div class="bad"><b>이런 말이 나와요</b><span>${a}</span></div><div class="good"><b>이렇게 해요</b><span>${b}</span></div></div>`).join("")}
+      </div>''')
 R("<h3>BeAT 위쪽 메뉴 4개, 언제 쓸까?</h3>", "<h3>BeAT 둘러보기: 메뉴 4개</h3>")
 R("</table></div>\n      </div>`;\n  },\n\n  build()", '''</table></div>
         <small style="color:var(--muted)">TIP · 답 아래의 출처를 꼭 열어 보세요. 약속 ‘확인’이 바로 이거예요.</small>
+      </div>
+      <div class="box">
+        <h3>개인GPT vs 수업GPT, 뭐가 달라?</h3>
+        <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:14px">
+          <thead><tr><th style="padding:8px;border-bottom:1px solid var(--line)"></th><th style="text-align:left;padding:8px;border-bottom:1px solid var(--line);color:var(--pink)">개인GPT</th><th style="text-align:left;padding:8px;border-bottom:1px solid var(--line);color:var(--blue)">수업GPT</th></tr></thead>
+          <tbody>${GPT_VS.map(([k, a, b]) => `<tr><td style="padding:8px;border-bottom:1px solid var(--line);white-space:nowrap;font-weight:700">${k}</td><td style="padding:8px;border-bottom:1px solid var(--line)">${a}</td><td style="padding:8px;border-bottom:1px solid var(--line)">${b}</td></tr>`).join("")}</tbody>
+        </table></div>
+        <small style="color:var(--muted)">시험 공부는 수업GPT, 생각 넓히기는 개인GPT!</small>
+      </div>
+      <div class="box">
+        <h3>왜 ‘사실 자료’를 넣어야 할까?</h3>
+        <p>AI는 정답을 ‘찾는’ 게 아니라, 그럴듯한 다음 말을 ‘만들어’요. 그래서 모르는 것도 자신 있게 지어낼 수 있어요.</p>
+        <div class="compare"><div class="bad"><b>자료 없이: “우리 학교 2학기 과학 시험 범위 알려 줘”</b><span>“3단원부터 5단원까지입니다.” → 그럴듯하지만 지어낸 답</span></div><div class="good"><b>자료와 함께: “[공지문 첨부] 이 공지에서 과학 범위만 알려 줘”</b><span>“공지 2번 항목에 따르면 1~2단원입니다. (출처: 공지문)” → 근거가 있고 확인할 수 있어요</span></div></div>
+        <small style="color:var(--muted)">오픈북 시험처럼, 펼쳐 놓은 자료가 있어야 정확해요. 수업GPT가 교재 안에서만 답하는 이유예요. (예시의 범위는 설명용 가상 예시)</small>
       </div>`;
   },
   build()''')
 R("<h3>이럴 때 어떻게 물어볼까? 상황을 골라 시작해 보세요</h3>", "<h3>직접 해보기: 질문 3개 중 골라 시작해 보세요</h3>")
+R("""      <div class="box">
+        <h3>직접 해보기: 질문 3개 중 골라 시작해 보세요</h3>""", """      <div class="box">
+        <h3>어려운 과목, 이렇게 물어봐요</h3>
+        <p style="color:var(--muted);font-size:14px">상황을 말하고 · 예시를 부탁하고 · 정답 대신 힌트, 그리고 확인까지! [ ] 칸은 내 것으로 바꿔 쓰세요.</p>
+        ${SUBJECTS.map(([sub, pain, pr]) => `<div class="row" style="justify-content:space-between;border-top:1px solid var(--line);padding-top:8px"><span style="min-width:0;flex:1"><span class="tag">${sub}</span> <b>“${pain}”</b><br>${esc(pr).replace(/\\n/g, " ").replace(/\\[([^\\]]+)\\]/g, "<mark>[$1]</mark>")}</span><button class="btn" data-copy="${esc(pr)}">복사</button></div>`).join("")}
+      </div>
+      <div class="box">
+        <h3>직접 해보기: 질문 3개 중 골라 시작해 보세요</h3>""")
 R('head("mission", "메뉴별 실습: 묻고, 확인하고, 내 것으로", "BeAT 위쪽 메뉴와 같은 순서예요. 수업GPT는 모두 하고, 나머지 메뉴는 하나 이상 골라 해 보세요. 메뉴마다 실습이 두세 개씩 있으니 나에게 더 필요한 쪽을 고르면 돼요. [ ] 칸은 내 상황에 맞게 바꿔 쓰고, 답을 받은 뒤 확인 체크를 모두 하면 완료예요.")',
   'head("mission", "나만의 AI Agent 만들기", "오늘의 두 번째 중심 실습이에요. AI Agents에서 예시 하나를 골라 나의 Agent를 만들고, 미리보기로 시험한 뒤 확인 체크를 모두 하면 완료예요. 시간이 남으면 다른 메뉴 실습도 하나씩 해 보세요.")')
 R("${fileBox(Object.keys(FILES))}", '${fileBox([...new Set(MISSIONS.flatMap(m => m.items.flatMap(it => it.files)).concat(AGENT_TPL.flatMap(t => t.files)))])}')
