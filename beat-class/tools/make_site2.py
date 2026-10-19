@@ -30,7 +30,6 @@ R('<span class="pill">부산교육 AI 튜터 · 1차시 실습</span>', '<span c
 R("<h1>BeAT<span>실습실</span></h1>", "<h1>BeAT<span>실습실 2</span></h1>")
 R("윤리 퀴즈로 시작해서, 접속하고, 질문을 만들고, 직접 물어본 다음, 답이 맞는지 확인하는 데까지. 선생님이 안내하는 순서대로 탭을 넘기세요.",
   "쓰기 전 약속 4가지를 정하고, 약속을 그림으로 만들고, 회원가입한 다음, 나만의 AI Agent를 만들어 봐요. 선생님이 안내하는 순서대로 탭을 넘기세요.")
-R('퀴즈 <b id="chipQuiz">0/8</b>', '퀴즈 <b id="chipQuiz">0/4</b>')
 R('안전 약속 <b id="chipPledge">0/5</b>', '약속 그림 <b id="chipPledge">0/4</b>')
 R('메뉴 실습 <b id="chipMission">0/4</b>', '나의 Agent <b id="chipMission">아직</b>')
 R('<span class="band-brand">BeAT 실습실 · 부산교육 AI 튜터 BeAT 활용 수업</span>', '<span class="band-brand">BeAT 실습실 2 · 부산교육 AI 튜터 BeAT 활용 수업 (50분 핵심판)</span>')
@@ -40,18 +39,7 @@ R("안전 사용 약속, 과목별 예시 질문, 후속 프로그램 안내: �
 R("학습지, 오답노트, 지문, 설문 데이터 등", "학습지, 오답노트, 영어 지문 등")
 R("설문 데이터와 자기소개 속 인물은 가상입니다. ", "")
 
-# 1. 윤리 퀴즈: 약속 4가지에 하나씩, 4문항
-block("const QUIZ = [", "const PLEDGE = [", '''const QUIZ = [
-  { q: "AI가 알려 준 역사 사건 연도를 교과서로 확인했더니 달랐다. 교과서 내용을 따랐다.", a: true, tag: "확인",
-    why: "AI는 틀린 내용을 그럴듯하게 말할 때가 있어요(할루시네이션). 답 아래 출처를 열고 교과서와 비교하는 게 정답이에요." },
-  { q: "발표 자료에 AI로 만든 그림을 넣고 아래에 “AI 생성 이미지(BeAT)”라고 적었다.", a: true, tag: "정직",
-    why: "AI를 썼으면 밝혀요. 듣는 사람도 무엇이 AI 작품인지 알 수 있고, 수업 규칙도 지킬 수 있어요." },
-  { q: "진로 상담을 받으려고 내 이름, 학교, 전화번호, 사진을 그대로 올렸다.", a: false, tag: "보호",
-    why: "이름, 학교, 연락처, 사진은 입력하지 않아요. “나는 고등학교 2학년 학생이야”처럼 바꿔서 물어보면 충분해요." },
-  { q: "친구 얼굴 사진을 허락 없이 올려서 웃긴 합성 이미지를 만들고 단톡방에 공유했다.", a: false, tag: "존중",
-    why: "AI를 남을 해치거나 놀리는 데 쓰지 않아요. 장난이어도 허락 없는 합성과 공유는 상처를 주고, 법적인 문제가 될 수 있어요." },
-];
-''')
+# 1. 윤리 퀴즈: 사이트 1의 8문항을 그대로 쓴다
 # 2. 약속 4가지 + 그림
 block("const PLEDGE = [", "const STEPS = [", '''const PLEDGE = [
   ["확인: 답을 그대로 믿지 않아요.", "답 아래 출처를 열어 교과서·자료와 비교하기"],
@@ -150,11 +138,11 @@ const BAD_GOOD = [
 ];
 ''')
 block("const TABS = [", "const load = ", '''const TABS = [
-  { id: "quiz", n: "1", label: "윤리 퀴즈", time: "3분", c: "var(--pink)", tx: "var(--on-strong)", art: "prompt" },
-  { id: "pledge", n: "2", label: "약속 그림", time: "8분", c: "var(--pink)", tx: "var(--on-strong)", art: "pair" },
+  { id: "quiz", n: "1", label: "윤리 퀴즈", time: "5분", c: "var(--pink)", tx: "var(--on-strong)", art: "prompt" },
+  { id: "pledge", n: "2", label: "약속 그림", time: "7분", c: "var(--pink)", tx: "var(--on-strong)", art: "pair" },
   { id: "login", n: "3", label: "회원가입", time: "20분", c: "var(--brand)", tx: "var(--on-strong)", art: "work" },
   { id: "build", n: "4", label: "질문 만들기", time: "3분", c: "var(--yellow-fill)", tx: "var(--on-fill)", art: "robot" },
-  { id: "mission", n: "5", label: "Agent 만들기", time: "11분", c: "var(--green-fill)", tx: "var(--on-fill)", art: "study" },
+  { id: "mission", n: "5", label: "Agent 만들기", time: "9분", c: "var(--green-fill)", tx: "var(--on-fill)", art: "study" },
   { id: "review", n: "6", label: "돌아보기", time: "5분", c: "var(--sky)", tx: "var(--on-fill)", art: "team" },
 ];
 ''')
@@ -176,7 +164,6 @@ R('''  $("#chipQuiz").textContent = `${Object.keys(state.quiz).length}/8 · 정�
   $("#chipMission").textContent = missionDone(AGENT_MENU) ? "완료" : "아직";''')
 
 # 탭 화면 문구
-R('"학교에서 실제로 있을 법한 상황 8가지예요. 괜찮으면 O, 안 되면 X를 누르세요."', '"쓰기 전 약속 4가지(확인·정직·보호·존중)와 이어지는 상황 4가지예요. 괜찮으면 O, 안 되면 X를 누르세요."')
 R('head("pledge", "BeAT 안전 사용 약속", "부산교육 AI 튜터 리플릿에 실린 다섯 가지 약속이에요. 읽고 하나씩 체크하세요.")',
   'head("pledge", "쓰기 전 약속 4가지, 그림으로 만들기", "네 가지 약속을 읽고 체크한 다음, 아래에서 약속을 그림으로 만드는 프롬프트를 완성해 보세요. 오늘의 첫 번째 중심 실습이에요.")')
 R('<div class="pledge-done">약속 완료! 이제 BeAT에 접속해 볼까요?</div><div class="row"><button class="btn primary" data-go="login">접속하기로</button></div>',
@@ -229,7 +216,7 @@ R("""    state.art.after = t.checked ? [...new Set([...state.art.after, k])] : s
 R('''    { label: "윤리 퀴즈 8문항 풀기", ok: quizN === QUIZ.length, hint: `${quizN}/8문항 풀었어요`, tab: "quiz" },
     { label: "안전 사용 약속 5가지 체크", ok: state.pledge.length === PLEDGE.length, hint: `${state.pledge.length}/5개 체크했어요`, tab: "pledge" },
     { label: "BeAT 접속하고 첫 질문 보내기", ok: state.login.length === STEPS.length, hint: `${state.login.length}/5단계 체크했어요`, tab: "login" },''',
-  '''    { label: "윤리 퀴즈 4문항 풀기", ok: quizN === QUIZ.length, hint: `${quizN}/${QUIZ.length}문항 풀었어요`, tab: "quiz" },
+  '''    { label: "윤리 퀴즈 8문항 풀기", ok: quizN === QUIZ.length, hint: `${quizN}/${QUIZ.length}문항 풀었어요`, tab: "quiz" },
     { label: "약속 4가지 체크하고 약속 그림 만들기", ok: state.pledge.length === PLEDGE.length && state.art.after.length === ART.after.length,
       hint: state.pledge.length < PLEDGE.length ? `약속 ${state.pledge.length}/${PLEDGE.length}개 체크했어요` : `그림 확인 ${state.art.after.length}/${ART.after.length}개 체크했어요`, tab: "pledge" },
     { label: "BeAT 회원가입하고 메뉴 4개 찾기", ok: state.login.length === STEPS.length, hint: `${state.login.length}/${STEPS.length}단계 체크했어요`, tab: "login" },''')
