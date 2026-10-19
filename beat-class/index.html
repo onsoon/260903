@@ -204,8 +204,16 @@ details summary { cursor: pointer; color: var(--muted); font-size: 14px; }
 .path { display: flex; flex-wrap: wrap; gap: 4px; list-style: none; padding: 0; margin: 0; font-size: 13px; }
 .path li { background: var(--blue-soft); color: var(--ink); padding: 3px 10px; border-radius: 999px; }
 .path li + li::before { content: "→ "; color: var(--muted); }
-footer.band { margin-top: 28px; padding-top: 14px; border-top: 6px solid transparent; border-image: linear-gradient(90deg, var(--sky), var(--brand)) 1; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; font-size: 13px; color: var(--muted); }
-footer.band span:first-child { color: var(--brand); font-weight: 700; }
+footer.band { margin-top: 28px; padding-top: 14px; border-top: 6px solid transparent; border-image: linear-gradient(90deg, var(--sky), var(--brand)) 1; display: grid; gap: 10px; font-size: 13px; color: var(--muted); }
+.band-row { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; }
+.band-brand { color: var(--brand); font-weight: 700; }
+.band .mail { color: var(--ink); user-select: all; overflow-wrap: anywhere; }
+.btn.small { padding: 4px 10px; font-size: 12.5px; }
+.policy { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 8px 12px; }
+.policy summary { font-weight: 700; color: var(--ink); font-size: 13.5px; }
+.policy ul { margin: 8px 0 4px; padding-left: 18px; display: grid; gap: 4px; line-height: 1.55; }
+.clear-msg { font-size: 12.5px; color: var(--pink); }
+.copy { font-size: 12px; }
 .toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(20px + env(safe-area-inset-bottom, 0px)); background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 10px; font-size: 14px; z-index: 20; }
 @media (prefers-reduced-motion: no-preference) { .panel { animation: in .2s ease-out; } @keyframes in { from { opacity: .6; transform: translateY(4px); } } }
 </style>
@@ -233,7 +241,37 @@ footer.band span:first-child { color: var(--brand); font-weight: 700; }
   </nav>
 
   <main id="panels"></main>
-  <footer class="band"><span>부산교육 AI 튜터 BeAT</span><span>beat.busanedu.net</span></footer>
+  <footer class="band">
+    <div class="band-row"><span class="band-brand">BeAT 실습실 · 부산교육 AI 튜터 BeAT 활용 수업</span><span>BeAT 접속: beat.busanedu.net</span></div>
+    <div class="band-row contact"><span>제작·문의 <b class="mail">onsoon43@gmail.com</b></span><button class="btn small" data-copy="onsoon43@gmail.com">이메일 복사</button></div>
+    <details class="policy" id="policy-privacy"><summary>개인정보 처리방침</summary>
+      <ul>
+        <li>이 사이트는 회원가입이나 로그인이 없고, 이름·학교·연락처 같은 개인정보를 수집하거나 서버로 보내지 않습니다.</li>
+        <li>퀴즈 답, 체크 상태, 질문 만들기와 돌아보기에 쓴 글은 지금 쓰는 기기의 브라우저(localStorage)에만 저장됩니다. 제작자를 포함해 누구도 볼 수 없습니다.</li>
+        <li>실습 자료 내려받기는 기기 안에서 파일을 만들어 저장하는 방식이라 외부로 전송되지 않습니다.</li>
+        <li>글꼴은 Google Fonts에서 불러오고, 사이트는 GitHub Pages 같은 호스팅 서비스로 제공됩니다. 이 과정에서 접속 정보(IP 주소 등)가 해당 서비스에 기록될 수 있습니다.</li>
+        <li>BeAT 등 AI 서비스에 입력한 내용은 그 서비스의 방침을 따릅니다. 실습할 때 개인정보를 입력하지 마세요.</li>
+        <li>공용 기기를 썼다면 아래 버튼으로 이 기기에 남은 실습 기록을 지울 수 있어요.</li>
+      </ul>
+      <div class="row"><button class="btn small" id="clearData">이 기기의 실습 기록 지우기</button><span class="clear-msg" id="clearMsg" aria-live="polite"></span></div>
+    </details>
+    <details class="policy"><summary>이용 방침</summary>
+      <ul>
+        <li>고등학생 대상 BeAT 활용 수업을 위한 비영리 교육 자료입니다. 수업과 개인 학습에 자유롭게 쓸 수 있고, 상업적으로 이용할 수 없습니다.</li>
+        <li>이 사이트는 BeAT 공식 서비스가 아니며, 부산광역시교육청·부산대학교 AI융합교육원이 운영하지 않습니다. BeAT 화면과 메뉴 이름은 실제와 다를 수 있으니 선생님 안내를 따르세요.</li>
+        <li>AI의 답변은 틀릴 수 있습니다. 교과서와 믿을 수 있는 자료로 확인하고, AI가 만든 결과를 그대로 제출하지 않습니다.</li>
+        <li>내용 오류나 개선 의견은 위 이메일로 알려 주세요.</li>
+      </ul>
+    </details>
+    <details class="policy"><summary>저작권·출처</summary>
+      <ul>
+        <li>캐릭터 일러스트: 「2026년 부산교육 AI 튜터 BeAT(비트) 활용 학생 교육 프로그램」 리플릿 (부산광역시교육청 교육연구정보원 · 부산대학교 AI융합교육원). 저작권은 원저작자에게 있습니다.</li>
+        <li>안전 사용 약속, 과목별 예시 질문, 후속 프로그램 안내: 같은 리플릿에서 인용했습니다.</li>
+        <li>사이트 구성과 실습 자료(학습지, 오답노트, 지문, 설문 데이터 등): 수업 연습용으로 새로 만든 예시입니다. 설문 데이터와 자기소개 속 인물은 가상입니다. 교육 목적으로 출처를 밝혀 자유롭게 쓸 수 있습니다.</li>
+      </ul>
+    </details>
+    <p class="copy">© 2026 BeAT 실습실 · 수업용 비영리 교육 자료</p>
+  </footer>
 </div>
 <div class="toast" id="toast" hidden></div>
 
@@ -845,7 +883,7 @@ function render() {
 function go(tab) { state.tab = tab; save("tab", tab); render(); window.scrollTo({ top: 0 }); }
 
 document.addEventListener("click", e => {
-  const t = e.target.closest("[data-tab],[data-go],[data-ox],[data-qnav],[data-copy],[data-menu],[data-reset],[data-dl],[data-copyfile],[data-preset],#copyBuilt,#copyReview,#copyArt");
+  const t = e.target.closest("[data-tab],[data-go],[data-ox],[data-qnav],[data-copy],[data-menu],[data-reset],[data-dl],[data-copyfile],[data-preset],#copyBuilt,#copyReview,#copyArt,#clearData");
   if (!t) return;
   if (t.dataset.tab) return go(t.dataset.tab);
   if (t.dataset.go) return go(t.dataset.go);
@@ -859,6 +897,12 @@ document.addEventListener("click", e => {
   if (t.dataset.copy) return copy(t.dataset.copy);
   if (t.id === "copyBuilt") return copy(builtPrompt());
   if (t.id === "copyArt") return copy(artPrompt());
+  if (t.id === "clearData") {
+    const msg = $("#clearMsg");
+    if (!t.dataset.armed) { t.dataset.armed = "1"; t.textContent = "한 번 더 누르면 지워져요"; msg.textContent = "퀴즈 답, 체크, 쓴 글이 모두 지워져요."; return; }
+    try { Object.keys(localStorage).filter(k => k.startsWith("beat1:")).forEach(k => localStorage.removeItem(k)); } catch {}
+    location.reload(); return;
+  }
   if (t.id === "copyReview") {
     const r = state.review;
     return copy(`[BeAT 1차시 돌아보기]\n1. 확인이 필요했던 부분: ${r.q1}\n2. 가장 필요한 약속: ${r.q2}\n3. 다음에 해 볼 것: ${r.q3}`);
