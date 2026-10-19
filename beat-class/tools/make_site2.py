@@ -296,6 +296,159 @@ R('''    ? "위 학생은 부산교육 AI 튜터 BeAT 활용 1차시 수업에�
 R('x.fillText("BeAT 실습실", 120, y);', 'x.fillText("BeAT 실습실 2", 120, y);')
 R("BeAT 안전 사용 약속", "BeAT 쓰기 전 약속", 2)
 
+# ===== 최종 슬라이드(BeAT 활용 교육 최종)에 맞춘 순서와 진로 탐색 탭 =====
+R('<p class="lede">쓰기 전 약속 4가지를 정하고, 약속을 그림으로 만들고, 회원가입한 다음, 나만의 AI Agent를 만들어 봐요. 선생님이 안내하는 순서대로 탭을 넘기세요.</p>',
+  '<p class="lede">회원가입하고, 약속을 지키며 질문하고, 약속 그림 · 내 진로 탐색 · 나만의 AI Agent를 만든 다음, 이수증을 패들렛에 올려요. 선생님이 안내하는 순서대로 탭을 넘기세요.</p>')
+R('<span class="chip">나의 Agent <b id="chipMission">아직</b></span>',
+  '<span class="chip">내 진로 <b id="chipCareer">아직</b></span>\n      <span class="chip">나의 Agent <b id="chipMission">아직</b></span>')
+block("const TABS = [", "const load = ", """// 진로 탐색: 나를 설명하는 네 칸으로 프롬프트를 만들고 결과를 확인한다
+const CAREER_CHECK = [
+  "내 이야기와 이어지나요? 추천 이유에 내가 쓴 경험·관심이 들어 있는지 봤어요",
+  "사실인지 확인했나요? 직업·학과 정보를 커리어넷(career.go.kr)에서 다시 봤어요",
+  "우리 학교에 있나요? 추천 선택과목을 우리 학교 교육과정표와 비교했어요",
+  "정답이 아니라 출발점: 마음에 드는 진로 1개를 골랐어요",
+];
+const CAREER_MORE = [
+  "2번 진로를 가진 사람의 하루 일과와 필요한 역량, 관련 학과 3개를 알려 줘.",
+  "내 경험 중 이 진로와 이어지는 부분을 자기소개 한 문장으로 쓸 수 있게 나에게 질문 3개를 해 줘. 문장은 내가 직접 쓸게.",
+];
+const TABS = [
+  { id: "login", n: "1", label: "회원가입", time: "20분", c: "var(--brand)", tx: "var(--on-strong)", art: "work" },
+  { id: "quiz", n: "2", label: "윤리 퀴즈", time: "5분", c: "var(--pink)", tx: "var(--on-strong)", art: "prompt" },
+  { id: "build", n: "3", label: "질문 만들기", time: "10분", c: "var(--yellow-fill)", tx: "var(--on-fill)", art: "robot" },
+  { id: "pledge", n: "4", label: "약속 그림", time: "10분", c: "var(--pink)", tx: "var(--on-strong)", art: "pair" },
+  { id: "career", n: "5", label: "진로 탐색", time: "10분", c: "var(--green-fill)", tx: "var(--on-fill)", art: "girl" },
+  { id: "mission", n: "6", label: "Agent 만들기", time: "10분", c: "var(--green-fill)", tx: "var(--on-fill)", art: "study" },
+  { id: "review", n: "7", label: "마무리", time: "5분", c: "var(--sky)", tx: "var(--on-fill)", art: "team" },
+];
+""")
+R('tab: load("tab", "quiz"),', 'tab: load("tab", "login"),')
+R('cert: load("cert", { name: "", sid: "" }),', 'cert: load("cert", { name: "", sid: "" }),\n  career: load("career", { grade: "1", exp: "", like: "", good: "", subj: "", checks: [], pick: "" }),')
+R('  if (id === "review") return state.review.q1 && state.review.q2 && state.review.q3;',
+  '  if (id === "career") return careerDone();\n  if (id === "review") return state.review.q1 && state.review.q2 && state.review.q3;')
+R('function itemDone(i, j)', """function careerPrompt() {
+  const c = state.career, v = x => x.trim() || "[ ]";
+  return [`너는 고등학생 진로 상담 선생님이야. 나는 고등학교 ${c.grade}학년 학생이야.`,
+    `나의 경험: ${v(c.exp)}`, `좋아하는 것: ${v(c.like)}`, `잘하는 것: ${v(c.good)}`, `좋아하는 과목: ${v(c.subj)}`,
+    "이걸 바탕으로 어울리는 진로 3가지를 추천해 줘. 진로마다 ① 내 이야기와 연결되는 이유 ② 도움이 되는 고교 선택과목 ③ 이번 달에 해 볼 활동 1가지를 표로 정리해 줘.",
+    "확실하지 않은 정보는 ‘확인 필요’라고 표시해 줘."].join("\\n");
+}
+function careerFilled() { const c = state.career; return ["exp", "like", "good", "subj"].every(k => c[k].trim().length > 1); }
+function careerDone() { return careerFilled() && state.career.checks.length === CAREER_CHECK.length && state.career.pick.trim().length > 1; }
+function updateCareer() { const el = document.getElementById("careerPreview"); if (el) el.textContent = careerPrompt(); save("career", state.career); }
+function itemDone(i, j)""")
+R('  $("#chipMission").textContent = missionDone(AGENT_MENU) ? "완료" : "아직";',
+  '  $("#chipMission").textContent = missionDone(AGENT_MENU) ? "완료" : "아직";\n  $("#chipCareer").textContent = careerDone() ? "완료" : "아직";')
+# 다음 탭 버튼을 새 순서에 맞게
+R('data-go="pledge" ${answered ? "" : "disabled"}>안전 약속으로</button>', 'data-go="build" ${answered ? "" : "disabled"}>질문 만들기로</button>')
+R('data-go="login">회원가입으로</button>', 'data-go="career">진로 탐색으로</button>')
+R("""        <small style="color:var(--muted)">시험 공부는 수업GPT, 생각 넓히기는 개인GPT!</small>
+      </div>""", """        <small style="color:var(--muted)">시험 공부는 수업GPT, 생각 넓히기는 개인GPT!</small>
+      </div>""")
+R("""(예시의 범위는 설명용 가상 예시)</small>
+      </div>`;""", """(예시의 범위는 설명용 가상 예시)</small>
+      </div>
+      <div class="row"><button class="btn primary" data-go="quiz">윤리 퀴즈로</button></div>`;""")
+# 진로 탐색 화면
+R("  review() {\n", """  career() {
+    const c = state.career;
+    const field = (k, label, ph) => `<label class="field"><span>${label}</span><textarea id="c-${k}" rows="2" placeholder="${ph}">${esc(c[k])}</textarea></label>`;
+    return head("career", "생성형 AI로 알아보는 내 진로", "나를 설명하는 네 칸을 채우면 진로 탐색 프롬프트가 완성돼요. 이름 · 학교 · 성적 · 연락처는 넣지 않아요. 나를 설명하는 건 경험과 관심이면 충분해요.") + `
+      <div class="builder">
+        <div class="box">
+          <label class="field"><span>학년</span><select id="c-grade">${["1", "2", "3"].map(g => `<option value="${g}" ${g === c.grade ? "selected" : ""}>${g}학년</option>`).join("")}</select></label>
+          ${field("exp", "나의 경험", "예: 동아리에서 미세먼지 측정기를 만들어 봤어")}
+          ${field("like", "좋아하는 것", "예: 그림 그리기, 동물, 친구 고민 들어 주기")}
+          ${field("good", "잘하는 것", "예: 쉽게 설명하기, 꼼꼼하게 정리하기")}
+          ${field("subj", "좋아하는 과목", "예: 생명과학, 영어, 정보")}
+          <small style="color:var(--muted)">구체적으로 쓸수록 나에게 맞는 결과가 나와요. ‘과학’보다 ‘동아리에서 측정기 만들기’처럼!</small>
+        </div>
+        <div class="box" style="align-content:start">
+          <h3>완성된 프롬프트</h3>
+          <div class="preview" id="careerPreview" aria-live="polite"></div>
+          <div class="row"><button class="btn primary" id="copyCareer">프롬프트 복사</button><a class="btn" href="${BEAT_URL}" target="_blank" rel="noopener" style="text-decoration:none">BeAT 열기</a></div>
+          <small style="color:var(--muted)">개인GPT에 붙여 넣어요. AI Agents에 학교·공유 진로 Agent가 있으면 그걸 써도 좋아요.</small>
+        </div>
+      </div>
+      <div class="box">
+        <h3>진로 결과, 이렇게 확인해요</h3>
+        <div class="fact">${CAREER_CHECK.map((t, k) => `<label><input type="checkbox" data-ccheck="${k}" ${c.checks.includes(k) ? "checked" : ""}>${t}</label>`).join("")}</div>
+        <label class="field"><span>마음에 드는 진로 1개와 고른 이유 한 줄</span><textarea id="c-pick" rows="2" placeholder="예: 환경 데이터 분석가, 측정기를 만들 때 데이터를 보는 게 제일 재미있었기 때문">${esc(c.pick)}</textarea></label>
+        <div class="row"><button class="btn primary" id="copyPick">패들렛용 복사</button></div>
+        <small style="color:var(--muted)">패들렛에는 고른 진로와 이유 한 줄만 올려요. 대화 전체나 개인정보는 올리지 않아요.</small>
+      </div>
+      <div class="box">
+        <h3>더 물어보기</h3>
+        ${CAREER_MORE.map(q => `<div class="row" style="justify-content:space-between;border-top:1px solid var(--line);padding-top:8px"><span style="min-width:0;flex:1">${esc(q)}</span><button class="btn" data-copy="${esc(q)}">복사</button></div>`).join("")}
+      </div>
+      <div class="row"><button class="btn primary" data-go="mission">Agent 만들기로</button></div>`;
+  },
+  review() {
+""")
+# 마무리: 돌아보기 → 이수증 → 패들렛 → 설문 순서
+R('head("review", "오늘의 돌아보기", "세 줄만 쓰면 돼요. 선생님이 몇 명에게 발표를 부탁할 수 있어요.")',
+  'head("review", "마무리: 돌아보기 · 이수증 · 설문", "세 줄 돌아보기를 쓰고, 이수증을 만들어 패들렛에 올린 다음, 만족도 조사를 제출해요.")')
+R("""      <div class="box">
+        <h3>만족도 조사 (끝나기 전에 꼭!)</h3>""", """      ${certBox()}
+      <div class="box">
+        <h3>패들렛에 올리기</h3>
+        <ol class="steps">${[["이수증 PNG 저장", "위 ‘이수증 만들기’ → ‘PNG로 저장’ (휴대폰은 미리보기 그림을 길게 눌러 저장)"], ["선생님이 알려 준 패들렛 열기", "수업 화면의 QR이나 주소로 들어가요"], ["게시물 올리기", "제목은 <b>학번</b>으로. 이수증 · 약속 그림 · 내 진로 한 줄을 올려요"], ["올리기 전 확인", "얼굴 사진 · 연락처 · 대화 전체는 올리지 않아요. AI 그림에는 ‘AI 생성 이미지(BeAT)’ 표시"]].map(([t, d]) => `<li><div class="body"><b>${t}</b><small>${d}</small></div></li>`).join("")}</ol>
+      </div>
+      <div class="box">
+        <h3>만족도 조사 (끝나기 전에 꼭!)</h3>""")
+R("""      </div>
+      ${certBox()}`;
+  },
+};""", """      </div>`;
+  },
+};""")
+# 이수증 단계: 새 탭 순서, 일곱 단계
+R('    { label: "윤리 퀴즈 8문항 풀기", ok: quizN === QUIZ.length, hint: `${quizN}/${QUIZ.length}문항 풀었어요`, tab: "quiz" },\n', '')
+i0 = page.index('    { label: "약속 4가지 체크하고 약속 그림 만들기"'); i1 = page.index('    { label: "BeAT 회원가입하고 메뉴 4개 찾기"')
+pledge_step = page[i0:i1]; page = page[:i0] + page[i1:]
+R('    { label: "BeAT 회원가입하고 메뉴 4개 찾기", ok: state.login.length === STEPS.length, hint: `${state.login.length}/${STEPS.length}단계 체크했어요`, tab: "login" },\n',
+  '    { label: "BeAT 회원가입하고 메뉴 4개 찾기", ok: state.login.length === STEPS.length, hint: `${state.login.length}/${STEPS.length}단계 체크했어요`, tab: "login" },\n    { label: "윤리 퀴즈 8문항 풀기", ok: quizN === QUIZ.length, hint: `${quizN}/${QUIZ.length}문항 풀었어요`, tab: "quiz" },\n')
+R('    { label: "나만의 AI Agent 만들기",', pledge_step + '    { label: "생성형 AI로 내 진로 탐색하기", ok: careerDone(), hint: !careerFilled() ? "나를 설명하는 네 칸을 채워야 해요" : state.career.checks.length < CAREER_CHECK.length ? `결과 확인 ${state.career.checks.length}/${CAREER_CHECK.length}개 체크했어요` : "고른 진로와 이유 한 줄을 써야 해요", tab: "career" },\n    { label: "나만의 AI Agent 만들기",')
+R("""    st[0].ok && ["AI 윤리 상황 퀴즈", `${QUIZ.length}문항 중 ${score}문항 정답`],
+    st[1].ok && ["약속 4가지와 약속 그림", "확인 · 정직 · 보호 · 존중 약속을 이미지 생성 프롬프트로 그림 만들기"],
+    st[2].ok && ["BeAT 회원가입", "교육디지털원패스로 가입하고 메뉴 4개(개인GPT · 수업GPT · AI Agents · Custom AI) 둘러보기"],
+    st[3].ok && ["좋은 질문 만들기", "역할 + 상황 + 요청 + 형식으로 질문 완성하기"],
+    done.length && ["BeAT 실습", done.join("\\n")],""", """    ok("login") && ["BeAT 회원가입", "교육디지털원패스로 가입하고 메뉴 4개(개인GPT · 수업GPT · AI Agents · Custom AI) 둘러보기"],
+    ok("quiz") && ["AI 윤리 상황 퀴즈", `${QUIZ.length}문항 중 ${score}문항 정답`],
+    ok("build") && ["좋은 질문 만들기", "역할 + 상황 + 요청 + 형식으로 질문 완성하기"],
+    ok("pledge") && ["약속 4가지와 약속 그림", "확인 · 정직 · 보호 · 존중 약속을 이미지 생성 프롬프트로 그림 만들기"],
+    ok("career") && ["내 진로 탐색", "나의 경험 · 좋아하는 것 · 잘하는 것 · 과목으로 진로 찾고 확인하기"],
+    done.length && ["BeAT 실습", done.join("\\n")],""")
+R("  const st = certSteps(), doneCount = st.filter(s => s.ok).length, allDone = doneCount === st.length;",
+  "  const st = certSteps(), doneCount = st.filter(s => s.ok).length, allDone = doneCount === st.length;\n  const ok = tab => st.some(s => s.tab === tab && s.ok);")
+R('"여섯 단계를 모두 마쳤어요!"', '"일곱 단계를 모두 마쳤어요!"')
+R('x.fillText(allDone ? "여섯 단계 모두 완료" : `여섯 단계 중 ${doneCount}단계 완료`, W - 120, 566);', 'x.fillText(allDone ? "일곱 단계 모두 완료" : `일곱 단계 중 ${doneCount}단계 완료`, W - 120, 566);')
+R("// 교육 이수증: 여섯 단계를", "// 교육 이수증: 일곱 단계를")
+R("쓰기 전 약속 4가지를 그림으로 표현하고, 나만의 AI Agent를 만들어 실습을 모두 마쳤기에", "쓰기 전 약속 4가지를 그림으로 표현하고, 내 진로를 탐색하고, 나만의 AI Agent를 만들어 실습을 모두 마쳤기에")
+R('    if (st.tab === "quiz") el = document.querySelector(".quiz-card");',
+  '    if (st.tab === "quiz") el = document.querySelector(".quiz-card");\n    if (st.tab === "career") el = ["exp", "like", "good", "subj"].map(k => $("#c-" + k)).find(t => t && t.value.trim().length < 2) || document.querySelector("[data-ccheck]:not(:checked)") || $("#c-pick");')
+# 이벤트
+R('  if (state.tab === "build") updateBuilder();', '  if (state.tab === "build") updateBuilder();\n  if (state.tab === "career") updateCareer();')
+R("#copyArt,", "#copyArt,#copyCareer,#copyPick,")
+R('  if (t.id === "copyArt") return copy(artPrompt());', '  if (t.id === "copyArt") return copy(artPrompt());\n  if (t.id === "copyCareer") return copy(careerPrompt());\n  if (t.id === "copyPick") return copy("[내 진로 탐색] " + state.career.pick.trim());')
+R('  if (t.id === "b-subject") { state.build.subject = t.value; return updateBuilder(); }', """  if (t.id === "b-subject") { state.build.subject = t.value; return updateBuilder(); }
+  if (t.id === "c-grade") { state.career.grade = t.value; return updateCareer(); }
+  if (t.dataset.ccheck !== undefined) {
+    const k = +t.dataset.ccheck;
+    state.career.checks = t.checked ? [...new Set([...state.career.checks, k])] : state.career.checks.filter(x => x !== k);
+    save("career", state.career); return renderChrome();
+  }""")
+R('  if (t.id === "b-ask") { state.build.ask = t.value; return updateBuilder(); }', """  if (t.id === "b-ask") { state.build.ask = t.value; return updateBuilder(); }
+  if (t.id && t.id.startsWith("c-") && t.id !== "c-grade") { state.career[t.id.slice(2)] = t.value; updateCareer(); return renderChrome(); }""")
+
+# 이름표: 50분 핵심판 → BeAT 활용 교육(최종)
+R("부산교육 AI 튜터 · 1차시 50분 핵심판", "부산교육 AI 튜터 · BeAT 활용 교육")
+R(" (50분 핵심판)</span>", "</span>")
+R("BeAT 활용 수업 · 1차시 (50분)", "BeAT 활용 교육")
+R("BeAT 활용 1차시 수업에서", "BeAT 활용 교육에서")
+R("BeAT 활용 1차시 수업에 참여하여", "BeAT 활용 교육에 참여하여")
+R("[BeAT 1차시 돌아보기]", "[BeAT 활용 교육 돌아보기]")
+
 (ROOT / "practice-site2.html").write_text(page, encoding="utf-8")
 
 # 단독 실행본: embed_files.py 와 같은 방식으로 문서 뼈대를 붙인다
