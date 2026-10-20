@@ -1,20 +1,41 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://ai.google.dev/static/site-assets/images/share-ais-513315318.png" />
-</div>
+# 🌱 우리집 습관 체크
 
-# Run and deploy your AI Studio app
+초등 4학년·중학교 1학년 아이의 **생활습관 → 공부습관**을 단계적으로 길러 주는 체크리스트 사이트입니다.
+기획 내용은 [SITE_PLAN.md](SITE_PLAN.md)에 있습니다.
 
-This contains everything you need to run your app locally.
+## 주요 기능
 
-View your app in AI Studio: https://ai.studio/apps/0ea2a32d-77c4-4912-992f-e76e8e55c254
+- **아이별 화면**: 초등 화면(밝고 큼직하게) / 중등 화면(어둡고 깔끔하게)
+- **오늘의 체크**: 생활·공부·가족 탭, 진행률, 모두 완료하면 축하 화면
+- **연속 기록 🔥**: 하루 80% 이상 달성한 날이 이어지면 늘어나요. 항목별 연속 기록도 표시
+- **이번 주 기록**: 요일 × 항목 표로 한 주 달성 현황과 주간 달성률
+- **3단계 로드맵**: 생활 기본기 → 공부 준비 → 자기주도 공부. 2주 연속 80%면 다음 단계 제안
+- **부모 모드 (비밀번호, 처음엔 `0000`)**: 아이 추가·별명·단계, 항목 추가·수정·순서·요일, 기본 템플릿 불러오기, 백업/복원
+- **체크리스트 나눔**: 추천 템플릿 담기, 우리 집 체크리스트를 링크/파일로 공유 (항목만 담기고 아이 정보·기록은 포함되지 않음)
 
-## Run Locally
+데이터는 서버 없이 **이 기기의 브라우저(localStorage)**에 저장됩니다. 기기를 바꿀 때는 부모 모드에서 백업 파일을 받아 두세요.
 
-**Prerequisites:**  Node.js
+## 실행
 
+```bash
+npm install
+npm run dev      # http://localhost:3000
+```
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+정적 파일만 필요하면 `npx vite build` 후 `dist/` 폴더를 아무 정적 호스팅(GitHub Pages, Netlify 등)에 올리면 됩니다.
+
+## 폴더 구조
+
+```
+src/
+├── App.tsx                 홈(아이 선택)과 화면 전환
+├── data.ts                 타입, 기본 템플릿
+├── logic.ts                날짜·달성률·연속 기록 계산, 공유 링크
+├── store.ts                localStorage 저장, 백업 파일
+├── theme.ts                초등/중등 화면 색상
+└── components/
+    ├── ChildView.tsx       오늘의 체크 · 이번 주 기록
+    ├── Celebration.tsx     완료 축하 화면
+    ├── ParentMode.tsx      부모 모드
+    └── SharePage.tsx       체크리스트 나눔
+```
