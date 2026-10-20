@@ -459,4 +459,7 @@ head, body = page.split("</style>\n", 1)
     '<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">\n'
     + head.replace("<style>", "<style>\nbody { margin: 0; }", 1) + "</style>\n</head>\n<body>\n"
     + body + "</body>\n</html>\n", encoding="utf-8")
-print("practice-site2.html, site2/index.html", len(page) // 1024, "KB")
+# 최종 슬라이드가 안내하는 주소(site3)에도 같은 사이트를 둔다. 기록 저장 키는 따로 쓴다
+(ROOT / "site3").mkdir(exist_ok=True)
+(ROOT / "site3" / "index.html").write_text((ROOT / "site2" / "index.html").read_text(encoding="utf-8").replace('"beat2:"', '"beat3:"'), encoding="utf-8")
+print("practice-site2.html, site2/index.html, site3/index.html", len(page) // 1024, "KB")
