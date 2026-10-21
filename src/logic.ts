@@ -140,8 +140,28 @@ export const templateFromChild = (
     .map(({ category, emoji, title, stage, days }): TemplateItem => ({ category, emoji, title, stage, days })),
 });
 
-export const templateToLink = (tpl: Template) =>
-  `${location.origin}${location.pathname}#t=${toBase64Url(JSON.stringify(tpl))}`;
+const CODE_PREFIX = "HABIT-";
+
+export const templateToCode = (tpl: Template) => CODE_PREFIX + toBase64Url(JSON.stringify(tpl));
+
+// 카톡 등으로 보낼 공유 메시지. 받은 사람은 메시지 전체를 붙여 넣어도 된다.
+export const templateToMessage = (tpl: Template) =>
+  `🌱 우리집 습관 체크 · "${tpl.title}" (${tpl.items.length}개 항목)\n` +
+  `'체크리스트 나눔 → 공유받은 체크리스트 열기'에 아래 코드를 붙여 넣으세요.\n\n${templateToCode(tpl)}`;
+
+const decode = (code: string): Template | null => {
+  try {
+    return parseTemplate(JSON.parse(fromBase64Url(code)));
+  } catch {
+    return null;
+  }
+};
+
+// 공유 메시지, 공유 코드, #t= 링크 모두 받아 준다
+export const templateFromText = (text: string): Template | null => {
+  const m = text.match(/HABIT-([A-Za-z0-9_-]+)/) ?? text.match(/#t=([A-Za-z0-9_-]+)/);
+  return m ? decode(m[1]) : null;
+};
 
 export const parseTemplate = (raw: unknown): Template | null => {
   if (!raw || typeof raw !== "object") return null;
@@ -168,10 +188,5 @@ export const parseTemplate = (raw: unknown): Template | null => {
 
 export const templateFromHash = (hash: string): Template | null => {
   const m = hash.match(/^#t=([A-Za-z0-9_-]+)$/);
-  if (!m) return null;
-  try {
-    return parseTemplate(JSON.parse(fromBase64Url(m[1])));
-  } catch {
-    return null;
-  }
+  return m ? decode(m[1]) : null;
 };

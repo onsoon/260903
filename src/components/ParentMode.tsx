@@ -18,6 +18,7 @@ import {
 } from "../data";
 import { addDays, canLevelUp, daysLabel, mondayOf, todayKey, weekRate } from "../logic";
 import { downloadJson, isAppState, readJsonFile } from "../store";
+import { ask } from "./Confirm";
 
 type Props = {
   state: AppState;
@@ -77,8 +78,8 @@ export default function ParentMode({ state, setState, onBack }: Props) {
             <Card title="아이 삭제">
               <button
                 disabled={state.children.length <= 1}
-                onClick={() => {
-                  if (!confirm(`${child.nickname}의 항목과 기록을 모두 지울까요? 되돌릴 수 없어요.`)) return;
+                onClick={async () => {
+                  if (!(await ask(`${child.nickname}의 항목과 기록을 모두 지울까요?\n되돌릴 수 없어요.`, { danger: true }))) return;
                   setState((s) => {
                     const { [child.id]: _, ...checks } = s.checks;
                     return {
@@ -329,8 +330,8 @@ function ItemsEditor({
                   </IconBtn>
                   <IconBtn
                     label="삭제"
-                    onClick={() =>
-                      confirm(`'${it.title}' 항목을 삭제할까요?`) &&
+                    onClick={async () =>
+                      (await ask(`'${it.title}' 항목을 삭제할까요?`, { danger: true })) &&
                       setState((s) => ({ ...s, items: s.items.filter((x) => x.id !== it.id) }))
                     }
                   >
@@ -426,9 +427,9 @@ function ItemsEditor({
 
 function TemplateApply({ setState, child }: { setState: Dispatch<SetStateAction<AppState>>; child: Child }) {
   const [idx, setIdx] = useState(0);
-  const apply = (replace: boolean) => {
+  const apply = async (replace: boolean) => {
     const tpl = TEMPLATES[idx];
-    if (replace && !confirm(`${child.nickname}의 현재 항목을 '${tpl.title}'로 바꿀까요? (체크 기록은 남아요)`)) return;
+    if (replace && !(await ask(`${child.nickname}의 현재 항목을 '${tpl.title}'로 바꿀까요?\n(체크 기록은 남아요)`))) return;
     setState((s) => ({
       ...s,
       items: [...(replace ? s.items.filter((it) => it.childId !== child.id) : s.items), ...itemsFromTemplate(tpl, child.id)],
@@ -457,12 +458,29 @@ function TemplateApply({ setState, child }: { setState: Dispatch<SetStateAction<
 
 function AppSettings({ state, setState }: { state: AppState; setState: Dispatch<SetStateAction<AppState>> }) {
   const [newPin, setNewPin] = useState("");
+  const [notice, setNotice] = useState("");
+  const [restoreText, setRestoreText] = useState("");
+  const [showRestore, setShowRestore] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  const restore = async (data: unknown) => {
+    if (!isAppState(data)) {
+      setNotice("⚠️ 백업 내용을 읽을 수 없어요. 복사한 백업 코드 전체를 붙여 넣었는지 확인해 주세요.");
+      return;
+    }
+    if (await ask("지금 데이터를 백업 내용으로 바꿀까요?")) {
+      setState(data);
+      setRestoreText("");
+      setShowRestore(false);
+      setNotice("✅ 백업에서 복원했어요.");
+    }
+  };
 
   return (
     <Card title="설정 · 백업" desc="기록은 이 기기의 브라우저에만 저장돼요. 기기를 바꾸기 전에 백업해 주세요.">
       <div className="flex gap-2">
         <input
+          id="new-pin"
           className={input}
           inputMode="numeric"
           placeholder="새 비밀번호 (숫자 4자리 이상)"
@@ -474,7 +492,7 @@ function AppSettings({ state, setState }: { state: AppState; setState: Dispatch<
           onClick={() => {
             setState((s) => ({ ...s, pin: newPin }));
             setNewPin("");
-            alert("비밀번호를 바꿨어요.");
+            setNotice("✅ 비밀번호를 바꿨어요.");
           }}
           className="shrink-0 rounded-lg bg-stone-800 px-4 text-sm font-semibold text-white disabled:opacity-40"
         >
@@ -483,13 +501,29 @@ function AppSettings({ state, setState }: { state: AppState; setState: Dispatch<
       </div>
       <div className="mt-3 grid grid-cols-2 gap-2">
         <button
+          onClick={async () => {
+            try {
+              await navigator.clipboard.writeText(JSON.stringify(state));
+              setNotice("✅ 백업 코드를 복사했어요. 메모 앱이나 카톡 '나에게 보내기'에 붙여 넣어 보관하세요.");
+            } catch {
+              setNotice("⚠️ 복사가 막혀 있어요. '백업 파일 받기'를 이용해 주세요.");
+            }
+          }}
+          className="rounded-lg py-2 text-sm font-semibold ring-1 ring-stone-200"
+        >
+          📋 백업 코드 복사
+        </button>
+        <button onClick={() => setShowRestore(!showRestore)} className="rounded-lg py-2 text-sm font-semibold ring-1 ring-stone-200">
+          📥 백업 코드로 복원
+        </button>
+        <button
           onClick={() => downloadJson(`습관체크-백업-${todayKey()}.json`, state)}
           className="rounded-lg py-2 text-sm font-semibold ring-1 ring-stone-200"
         >
           💾 백업 파일 받기
         </button>
         <button onClick={() => fileRef.current?.click()} className="rounded-lg py-2 text-sm font-semibold ring-1 ring-stone-200">
-          📂 백업에서 복원
+          📂 백업 파일로 복원
         </button>
         <input
           ref={fileRef}
@@ -501,17 +535,43 @@ function AppSettings({ state, setState }: { state: AppState; setState: Dispatch<
             e.target.value = "";
             if (!file) return;
             try {
-              const data = await readJsonFile(file);
-              if (!isAppState(data)) throw new Error();
-              if (confirm("지금 데이터를 백업 파일 내용으로 바꿀까요?")) setState(data);
+              await restore(await readJsonFile(file));
             } catch {
-              alert("백업 파일을 읽을 수 없어요.");
+              setNotice("⚠️ 백업 파일을 읽을 수 없어요.");
             }
           }}
         />
       </div>
+      {showRestore && (
+        <div className="mt-3">
+          <textarea
+            id="restore-code"
+            className={`${input} h-24 font-mono text-xs`}
+            placeholder="복사해 둔 백업 코드를 붙여 넣으세요"
+            value={restoreText}
+            onChange={(e) => setRestoreText(e.target.value)}
+          />
+          <button
+            disabled={!restoreText.trim()}
+            onClick={() => {
+              try {
+                restore(JSON.parse(restoreText));
+              } catch {
+                restore(null);
+              }
+            }}
+            className="mt-2 w-full rounded-lg bg-stone-800 py-2 text-sm font-semibold text-white disabled:opacity-40"
+          >
+            이 코드로 복원
+          </button>
+        </div>
+      )}
+      {notice && <p className="mt-3 text-sm text-stone-600">{notice}</p>}
       <button
-        onClick={() => confirm("모든 아이·항목·기록을 지우고 처음 상태로 돌릴까요?") && setState(createDefaultState())}
+        onClick={async () =>
+          (await ask("모든 아이·항목·기록을 지우고 처음 상태로 돌릴까요?\n되돌릴 수 없어요.", { danger: true })) &&
+          setState(createDefaultState())
+        }
         className="mt-3 text-sm text-red-600 underline"
       >
         전체 초기화

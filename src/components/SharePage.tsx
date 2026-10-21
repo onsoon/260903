@@ -1,7 +1,8 @@
 import { useRef, useState, type Dispatch, type SetStateAction } from "react";
 import { ArrowLeft, Copy, Download, Upload } from "lucide-react";
 import { AppState, STAGES, TEMPLATES, Template, itemsFromTemplate } from "../data";
-import { daysLabel, parseTemplate, templateFromChild, templateFromHash, templateToLink } from "../logic";
+import { daysLabel, parseTemplate, templateFromChild, templateFromText, templateToMessage } from "../logic";
+import { ask } from "./Confirm";
 import { downloadJson, readJsonFile } from "../store";
 
 type Props = {
@@ -60,7 +61,7 @@ export default function SharePage({ state, setState, incoming, onBack }: Props) 
         <ImportBox onLoad={setPreview} />
 
         <p className="mt-8 text-center text-xs text-stone-400">
-          공유 링크·파일에는 체크 항목만 담겨요. 아이 별명이나 체크 기록은 포함되지 않아요.
+          공유 코드·파일에는 체크 항목만 담겨요. 아이 별명이나 체크 기록은 포함되지 않아요.
         </p>
       </div>
     </div>
@@ -84,9 +85,9 @@ function TemplatePreview({
   const [done, setDone] = useState(false);
   const child = state.children.find((c) => c.id === childId);
 
-  const apply = (replace: boolean) => {
+  const apply = async (replace: boolean) => {
     if (!child) return;
-    if (replace && !confirm(`${child.nickname}의 현재 항목을 모두 이 템플릿으로 바꿀까요? (체크 기록은 남아요)`)) return;
+    if (replace && !(await ask(`${child.nickname}의 현재 항목을 모두 이 템플릿으로 바꿀까요?\n(체크 기록은 남아요)`))) return;
     setState((s) => ({
       ...s,
       items: [...(replace ? s.items.filter((it) => it.childId !== child.id) : s.items), ...itemsFromTemplate(tpl, child.id)],
@@ -165,6 +166,7 @@ function ShareMine({ state }: { state: AppState }) {
   const [description, setDescription] = useState("");
   const [author, setAuthor] = useState("");
   const [copied, setCopied] = useState(false);
+  const [fallback, setFallback] = useState(false);
 
   if (!child) return null;
   const tpl = templateFromChild(state, child, {
@@ -172,13 +174,13 @@ function ShareMine({ state }: { state: AppState }) {
     description: description.trim(),
     author: author.trim() || undefined,
   });
-  const link = templateToLink(tpl);
+  const message = templateToMessage(tpl);
   const field = "w-full rounded-lg border border-stone-200 px-3 py-2 text-sm outline-none focus:border-sky-500";
 
   return (
     <section className="mt-8 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-stone-100">
       <h2 className="font-bold">우리 집 체크리스트 나누기</h2>
-      <p className="mt-1 text-sm text-stone-500">링크를 카톡·문자로 보내면, 받은 사람이 열어서 바로 담을 수 있어요.</p>
+      <p className="mt-1 text-sm text-stone-500">공유 코드를 카톡·문자로 보내면, 받은 사람이 붙여 넣어 바로 담을 수 있어요.</p>
       <div className="mt-3 flex flex-wrap gap-2">
         {state.children.map((c) => (
           <button
@@ -208,16 +210,16 @@ function ShareMine({ state }: { state: AppState }) {
           disabled={tpl.items.length === 0}
           onClick={async () => {
             try {
-              await navigator.clipboard.writeText(link);
+              await navigator.clipboard.writeText(message);
               setCopied(true);
               setTimeout(() => setCopied(false), 2000);
             } catch {
-              prompt("아래 링크를 복사하세요", link);
+              setFallback(true);
             }
           }}
           className="flex items-center justify-center gap-1 rounded-xl bg-sky-600 py-2.5 text-sm font-semibold text-white disabled:opacity-40"
         >
-          <Copy size={16} /> {copied ? "복사했어요!" : "공유 링크 복사"}
+          <Copy size={16} /> {copied ? "복사했어요!" : "공유 코드 복사"}
         </button>
         <button
           disabled={tpl.items.length === 0}
@@ -227,6 +229,18 @@ function ShareMine({ state }: { state: AppState }) {
           <Download size={16} /> 파일로 받기
         </button>
       </div>
+      {fallback && (
+        <div className="mt-3">
+          <p className="text-sm text-stone-600">자동 복사가 막혀 있어요. 아래 내용을 길게 눌러 전체 복사해 주세요.</p>
+          <textarea
+            id="share-message"
+            readOnly
+            value={message}
+            onFocus={(e) => e.target.select()}
+            className="mt-2 h-28 w-full rounded-lg border border-stone-200 p-2 font-mono text-xs"
+          />
+        </div>
+      )}
     </section>
   );
 }
@@ -237,31 +251,32 @@ function ImportBox({ onLoad }: { onLoad: (t: Template) => void }) {
   const [error, setError] = useState("");
 
   const loadLink = () => {
-    const link = text.trim();
-    const tpl = templateFromHash(link.slice(link.indexOf("#")));
+    const tpl = templateFromText(text);
     if (tpl) {
       onLoad(tpl);
       setText("");
       setError("");
       window.scrollTo({ top: 0, behavior: "smooth" });
-    } else setError("올바른 공유 링크가 아니에요.");
+    } else setError("공유 코드를 찾지 못했어요. 받은 메시지를 통째로 붙여 넣어 보세요.");
   };
 
   return (
     <section className="mt-5 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-stone-100">
       <h2 className="font-bold">공유받은 체크리스트 열기</h2>
-      <div className="mt-3 flex gap-2">
-        <input
-          className="w-full rounded-lg border border-stone-200 px-3 py-2 text-sm outline-none focus:border-sky-500"
-          placeholder="공유 링크 붙여넣기"
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && loadLink()}
-        />
-        <button onClick={loadLink} className="shrink-0 rounded-lg bg-stone-800 px-4 text-sm font-semibold text-white">
-          열기
-        </button>
-      </div>
+      <textarea
+        id="import-code"
+        className="mt-3 h-20 w-full rounded-lg border border-stone-200 px-3 py-2 text-sm outline-none focus:border-sky-500"
+        placeholder="받은 공유 코드(HABIT-…)나 메시지를 붙여 넣으세요"
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+      />
+      <button
+        onClick={loadLink}
+        disabled={!text.trim()}
+        className="mt-2 w-full rounded-lg bg-stone-800 py-2 text-sm font-semibold text-white disabled:opacity-40"
+      >
+        열어 보기
+      </button>
       <button
         onClick={() => fileRef.current?.click()}
         className="mt-2 flex items-center gap-1 text-sm text-stone-600 underline"

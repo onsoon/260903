@@ -7,17 +7,31 @@ import { useAppState } from "./store";
 import ChildView from "./components/ChildView";
 import ParentMode from "./components/ParentMode";
 import SharePage from "./components/SharePage";
+import { ConfirmHost } from "./components/Confirm";
 
 type Route = { name: "home" } | { name: "child"; id: string } | { name: "parent" } | { name: "share" };
 
 function readIncoming(): Template | null {
   const tpl = templateFromHash(location.hash);
   // 링크로 들어온 템플릿은 한 번만 보여 주고 주소창은 깨끗하게
-  if (location.hash) history.replaceState(null, "", location.pathname + location.search);
+  try {
+    if (location.hash) history.replaceState(null, "", location.pathname + location.search);
+  } catch {
+    // 주소를 바꿀 수 없는 환경이면 그대로 둔다
+  }
   return tpl;
 }
 
 export default function App() {
+  return (
+    <>
+      <Screen />
+      <ConfirmHost />
+    </>
+  );
+}
+
+function Screen() {
   const [state, setState] = useAppState();
   const [incoming] = useState(readIncoming);
   const [route, setRoute] = useState<Route>(incoming ? { name: "share" } : { name: "home" });
