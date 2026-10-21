@@ -8,8 +8,10 @@ import ChildView from "./components/ChildView";
 import ParentMode from "./components/ParentMode";
 import SharePage from "./components/SharePage";
 import { ConfirmHost } from "./components/Confirm";
+import { SheetGuide, SyncBadge } from "./components/SheetSync";
+import { useSync } from "./sync";
 
-type Route = { name: "home" } | { name: "child"; id: string } | { name: "parent" } | { name: "share" };
+type Route = { name: "home" } | { name: "child"; id: string } | { name: "parent" } | { name: "share" } | { name: "guide" };
 
 function readIncoming(): Template | null {
   const tpl = templateFromHash(location.hash);
@@ -33,9 +35,12 @@ export default function App() {
 
 function Screen() {
   const [state, setState] = useAppState();
+  const sync = useSync(state, setState);
+  const [parentUnlocked, setParentUnlocked] = useState(false);
   const [incoming] = useState(readIncoming);
   const [route, setRoute] = useState<Route>(incoming ? { name: "share" } : { name: "home" });
   const home = () => {
+    setParentUnlocked(false);
     setRoute({ name: "home" });
     window.scrollTo(0, 0);
   };
@@ -44,7 +49,22 @@ function Screen() {
     const child = state.children.find((c) => c.id === route.id);
     if (child) return <ChildView key={child.id} state={state} setState={setState} child={child} onBack={home} />;
   }
-  if (route.name === "parent") return <ParentMode state={state} setState={setState} onBack={home} />;
+  if (route.name === "parent")
+    return (
+      <ParentMode
+        state={state}
+        setState={setState}
+        onBack={home}
+        sync={sync}
+        unlocked={parentUnlocked}
+        onUnlock={() => setParentUnlocked(true)}
+        onGuide={() => {
+          setRoute({ name: "guide" });
+          window.scrollTo(0, 0);
+        }}
+      />
+    );
+  if (route.name === "guide") return <SheetGuide onBack={() => setRoute({ name: "parent" })} />;
   if (route.name === "share") return <SharePage state={state} setState={setState} incoming={incoming} onBack={home} />;
 
   const today = todayKey();
@@ -56,6 +76,7 @@ function Screen() {
           <div className="text-5xl">🌱</div>
           <h1 className="mt-2 text-3xl font-extrabold tracking-tight">우리집 습관 체크</h1>
           <p className="mt-1 text-stone-500">{formatDate(today)} · 오늘도 한 칸씩 채워 볼까요?</p>
+          <SyncBadge status={sync.status} onRetry={sync.sync} />
         </header>
 
         <div className="mt-8 grid gap-4">

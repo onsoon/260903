@@ -19,19 +19,24 @@ import {
 import { addDays, canLevelUp, daysLabel, mondayOf, todayKey, weekRate } from "../logic";
 import { downloadJson, isAppState, readJsonFile } from "../store";
 import { ask } from "./Confirm";
+import { SheetCard } from "./SheetSync";
+import type { SyncController } from "../sync";
 
 type Props = {
+  sync: SyncController;
+  unlocked: boolean;
+  onUnlock: () => void;
+  onGuide: () => void;
   state: AppState;
   setState: Dispatch<SetStateAction<AppState>>;
   onBack: () => void;
 };
 
-export default function ParentMode({ state, setState, onBack }: Props) {
-  const [unlocked, setUnlocked] = useState(false);
+export default function ParentMode({ state, setState, onBack, sync, unlocked, onUnlock, onGuide }: Props) {
   const [childId, setChildId] = useState(state.children[0]?.id);
   const child = state.children.find((c) => c.id === childId) ?? state.children[0];
 
-  if (!unlocked) return <PinGate pin={state.pin} onUnlock={() => setUnlocked(true)} onBack={onBack} />;
+  if (!unlocked) return <PinGate pin={state.pin} onUnlock={onUnlock} onBack={onBack} />;
 
   const updateChild = (patch: Partial<Child>) =>
     setState((s) => ({ ...s, children: s.children.map((c) => (c.id === child.id ? { ...c, ...patch } : c)) }));
@@ -99,6 +104,7 @@ export default function ParentMode({ state, setState, onBack }: Props) {
           </>
         )}
 
+        <SheetCard sync={sync} onGuide={onGuide} />
         <AppSettings state={state} setState={setState} />
       </div>
     </div>

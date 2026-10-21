@@ -5,6 +5,8 @@ import {defineConfig} from 'vite';
 
 export default defineConfig(() => {
   return {
+    // GitHub Pages(/저장소이름/ 경로)에서도 열리도록 상대 경로로 빌드
+    base: "./",
     plugins: [react(), tailwindcss()],
     resolve: {
       alias: {
