@@ -1,0 +1,653 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>부산 시그니처 향수 랩</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Noto+Sans+KR:wght@400;500;700&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: 한 줄 작업지 — 상단 단계 내비 + 880px 단일 컬럼, 각 단계는 "입력 → 프롬프트 복사 → AI 답변 붙여넣기" 순서 */
+:root {
+  --bg: #f4f6f8;          /* 바다 안개 */
+  --surface: #ffffff;
+  --sunken: #eaeef2;
+  --ink: #15233b;         /* 부산 밤바다 */
+  --muted: #5a677c;
+  --line: #d5dce5;
+  --camellia: #b8293f;    /* 동백꽃 — 부산 시화 */
+  --camellia-soft: #f8e4e7;
+  --sea: #1f6f8b;
+  --top: #c9861a;         /* 탑 노트 */
+  --mid: #b8536d;         /* 미들 노트 */
+  --base: #7a5a3a;        /* 베이스 노트 */
+  --ok: #2f7d4f;
+  --font-display: "Gowun Batang", "Nanum Myeongjo", "AppleMyungjo", serif;
+  --font-body: "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --radius: 14px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1522; --surface: #162033; --sunken: #1c2840; --ink: #e8edf5; --muted: #9aa7bc; --line: #2b3a55;
+    --camellia: #f0697f; --camellia-soft: #3a1d29; --sea: #5bb6d4; --top: #e6a94a; --mid: #e58aa1; --base: #c79e74; --ok: #6cc391;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1522; --surface: #162033; --sunken: #1c2840; --ink: #e8edf5; --muted: #9aa7bc; --line: #2b3a55;
+  --camellia: #f0697f; --camellia-soft: #3a1d29; --sea: #5bb6d4; --top: #e6a94a; --mid: #e58aa1; --base: #c79e74; --ok: #6cc391;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--bg); color: var(--ink);
+  font-family: var(--font-body); font-size: 16px; line-height: 1.65;
+}
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--surface); }
+.wrap { max-width: 880px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; line-height: 1.3; margin: 0; }
+h1 { font-size: clamp(1.9rem, 5vw, 2.8rem); }
+h2 { font-size: 1.6rem; }
+h3 { font-size: 1.15rem; }
+p { margin: 0; }
+a { color: var(--sea); }
+.eyebrow { font-size: .78rem; letter-spacing: .12em; text-transform: uppercase; color: var(--camellia); font-weight: 700; }
+.muted { color: var(--muted); }
+.mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+
+/* Hero */
+header.hero { padding-block: 48px 28px; display: grid; gap: 14px; }
+.hero p.lead { font-size: 1.08rem; max-width: 60ch; color: var(--muted); }
+.hero .byline { font-size: .92rem; color: var(--muted); }
+.hero .byline b { color: var(--ink); }
+
+/* Sticky step nav */
+nav.steps { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: color-mix(in srgb, var(--surface) 92%, transparent); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); }
+nav.steps .wrap { display: flex; gap: 6px; overflow-x: auto; padding-block: 10px; scrollbar-width: none; }
+nav.steps a { flex: none; display: flex; align-items: center; gap: 8px; text-decoration: none; color: var(--muted); font-size: .9rem; padding: 6px 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); }
+nav.steps a .dot { width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center; font-size: .72rem; font-weight: 700; background: var(--sunken); color: var(--muted); }
+nav.steps a.done { color: var(--ink); }
+nav.steps a.done .dot { background: var(--ok); color: var(--surface); }
+nav.steps a:focus-visible { outline: 2px solid var(--camellia); outline-offset: 2px; }
+
+main { display: grid; gap: 28px; padding-block: 28px 64px; }
+section.block { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 28px clamp(18px, 4vw, 32px); display: grid; gap: 20px; scroll-margin-top: 72px; }
+.block-head { display: grid; gap: 6px; }
+.stepno { font-family: var(--font-mono); font-size: .8rem; color: var(--camellia); }
+
+/* Theory */
+.tech { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+.tech div { background: var(--sunken); border-radius: 10px; padding: 14px 16px; display: grid; gap: 4px; min-width: 0; }
+.tech b { font-size: .95rem; }
+.tech span { font-size: .88rem; color: var(--muted); }
+.pyramid { display: grid; gap: 8px; }
+.pyramid .tier { display: grid; grid-template-columns: 110px 1fr; gap: 12px; align-items: center; padding: 12px 16px; border-radius: 10px; border-left: 4px solid; background: var(--sunken); }
+.pyramid .tier.t { border-color: var(--top); } .pyramid .tier.m { border-color: var(--mid); } .pyramid .tier.b { border-color: var(--base); }
+.pyramid .tier strong { font-family: var(--font-display); }
+.pyramid .tier small { display: block; color: var(--muted); font-family: var(--font-mono); }
+.formula { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.formula span { padding: 6px 12px; border-radius: 999px; background: var(--camellia-soft); color: var(--camellia); font-weight: 500; font-size: .92rem; }
+.formula i { color: var(--muted); font-style: normal; }
+ol.tips { margin: 0; padding-left: 1.3em; display: grid; gap: 4px; font-size: .95rem; columns: 2; }
+@media (max-width: 640px) { ol.tips { display: block; columns: 1; } .pyramid .tier { grid-template-columns: 1fr; gap: 2px; } }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+@media (max-width: 720px) { .two { grid-template-columns: 1fr; } }
+.two > * { min-width: 0; display: grid; gap: 12px; align-content: start; }
+
+/* Fragrance chips */
+.layers { display: grid; gap: 16px; }
+.layer { display: grid; gap: 8px; }
+.layer-label { display: flex; align-items: baseline; gap: 10px; font-weight: 700; }
+.layer-label small { font-weight: 400; color: var(--muted); }
+.chips { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+.chip { text-align: left; font: inherit; cursor: pointer; border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 10px; padding: 10px 12px; display: grid; gap: 2px; }
+.chip b { font-size: .95rem; }
+.chip span { font-size: .78rem; color: var(--muted); line-height: 1.4; }
+.chip:hover { border-color: var(--muted); }
+.chip:focus-visible { outline: 2px solid var(--camellia); outline-offset: 2px; }
+.layer[data-layer="top"] .chip[aria-pressed="true"] { border-color: var(--top); box-shadow: inset 0 0 0 1px var(--top); }
+.layer[data-layer="mid"] .chip[aria-pressed="true"] { border-color: var(--mid); box-shadow: inset 0 0 0 1px var(--mid); }
+.layer[data-layer="base"] .chip[aria-pressed="true"] { border-color: var(--base); box-shadow: inset 0 0 0 1px var(--base); }
+.chip .rec { font-size: .7rem; color: var(--sea); }
+
+/* Form */
+label.field { display: grid; gap: 6px; font-weight: 500; font-size: .95rem; }
+label.field small { font-weight: 400; color: var(--muted); }
+input[type="text"], textarea, select {
+  font: inherit; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; width: 100%;
+}
+textarea { resize: vertical; min-height: 110px; line-height: 1.55; }
+input:focus-visible, textarea:focus-visible, select:focus-visible { outline: 2px solid var(--camellia); outline-offset: 1px; border-color: transparent; }
+
+/* Prompt box */
+.prompt { border: 1px dashed var(--line); border-radius: 12px; background: var(--sunken); padding: 16px; display: grid; gap: 12px; }
+.prompt-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
+.prompt-head h3 { font-size: 1.02rem; font-family: var(--font-body); font-weight: 700; }
+.prompt textarea { font-size: .9rem; min-height: 180px; background: var(--surface); }
+.btns { display: flex; flex-wrap: wrap; gap: 8px; }
+.btn { font: inherit; font-weight: 700; font-size: .92rem; cursor: pointer; border-radius: 10px; padding: 10px 16px; border: 1px solid transparent; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; }
+.btn.primary { background: var(--ink); color: var(--bg); }
+.btn.ghost { background: var(--surface); color: var(--ink); border-color: var(--line); }
+.btn.danger { background: var(--camellia); color: var(--surface); }
+.btn:focus-visible { outline: 2px solid var(--camellia); outline-offset: 2px; }
+.btn:hover { filter: brightness(1.08); }
+
+/* Calculator */
+.calc { display: grid; gap: 10px; }
+.calc-row { display: grid; grid-template-columns: 120px 1fr 56px 160px; gap: 12px; align-items: center; }
+.calc-row .name { font-weight: 700; }
+.calc-row .name small { display: block; font-weight: 400; color: var(--muted); font-size: .78rem; }
+.calc-row input[type="range"] { width: 100%; }
+.calc-row .ml { white-space: nowrap; }
+.calc-row[data-l="top"] input { accent-color: var(--top); } .calc-row[data-l="mid"] input { accent-color: var(--mid); } .calc-row[data-l="base"] input { accent-color: var(--base); }
+@media (max-width: 560px) { .calc-row { grid-template-columns: 1fr 64px; } .calc-row input[type="range"] { grid-column: 1 / -1; grid-row: 2; } .calc-row .ml { grid-column: 1 / -1; } }
+.calc-sum { display: flex; flex-wrap: wrap; gap: 8px 20px; padding-top: 10px; border-top: 1px solid var(--line); font-size: .92rem; }
+.warn { color: var(--camellia); font-weight: 700; }
+.good { color: var(--ok); font-weight: 700; }
+.table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; }
+table { border-collapse: collapse; width: 100%; font-size: .9rem; }
+th, td { padding: 8px 12px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+th { background: var(--sunken); font-weight: 700; white-space: nowrap; }
+tr:last-child td { border-bottom: 0; }
+
+.places { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+.note-box { font-size: .9rem; background: var(--camellia-soft); color: var(--ink); border-radius: 10px; padding: 12px 14px; }
+.note-box b { color: var(--camellia); }
+
+/* Label card */
+.label-card { justify-self: center; width: min(100%, 380px); border: 1px solid var(--line); border-radius: 18px; background: var(--surface); padding: 28px 26px; display: grid; gap: 14px; text-align: center; box-shadow: 0 12px 32px -18px color-mix(in srgb, var(--ink) 45%, transparent); }
+.label-card .city { font-family: var(--font-mono); font-size: .72rem; letter-spacing: .3em; color: var(--muted); }
+.label-card .pname { font-family: var(--font-display); font-size: 1.9rem; line-height: 1.2; }
+.label-card .pmean { font-size: .88rem; color: var(--muted); }
+.label-card hr { border: 0; border-top: 1px solid var(--line); width: 60%; margin: 0 auto; }
+.label-card .notes { display: grid; gap: 6px; font-size: .9rem; }
+.label-card .notes div { display: flex; justify-content: space-between; gap: 12px; }
+.label-card .notes span:first-child { font-family: var(--font-mono); font-size: .75rem; letter-spacing: .08em; }
+.label-card .vol { font-family: var(--font-mono); font-size: .8rem; color: var(--muted); }
+
+.toast { position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 10px 18px; border-radius: 999px; font-size: .92rem; z-index: 20; }
+.example-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 16px; font-size: .92rem; }
+.confirm { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+footer { padding-block: 0 48px; font-size: .85rem; color: var(--muted); }
+@media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+</style>
+</head>
+<body>
+
+<header class="wrap hero">
+  <span class="eyebrow">생성형 AI × Scent-Tech 실습</span>
+  <h1>부산의 시그니처 향수 메이킹</h1>
+  <p class="lead">Gemini와 대화하며 나만의 향수를 기획합니다. 향료를 고르고, 컨셉을 정하고, 10ml 레시피를 계산한 뒤, 이름을 짓고 SNS 홍보글과 이미지까지 만들어 보세요.</p>
+  <p class="byline">향기에 기술을 더하다 · 강사 <b>강륜경</b></p>
+</header>
+
+<nav class="steps" aria-label="실습 단계">
+  <div class="wrap" id="stepNav">
+    <a href="#theory"><span class="dot">i</span>수업 노트</a>
+    <a href="#step1" data-step="1"><span class="dot">1</span>향료 고르기</a>
+    <a href="#step2" data-step="2"><span class="dot">2</span>컨셉 설정</a>
+    <a href="#step3" data-step="3"><span class="dot">3</span>10ml 레시피</a>
+    <a href="#step4" data-step="4"><span class="dot">4</span>이름 짓기</a>
+    <a href="#step5" data-step="5"><span class="dot">5</span>SNS 홍보</a>
+    <a href="#final" data-step="6"><span class="dot">✓</span>완성 라벨</a>
+  </div>
+</nav>
+
+<main class="wrap">
+
+  <div class="example-bar">
+    <span id="exampleMsg">수업 예시(프루티 · 부케 · 머스크)가 채워져 있어요. 내 선택으로 바꾸면 이 브라우저에 자동 저장됩니다.</span>
+    <div class="confirm" id="resetArea">
+      <button class="btn ghost" type="button" id="resetBtn">모두 비우고 새로 시작</button>
+    </div>
+  </div>
+
+  <!-- 수업 노트 -->
+  <section class="block" id="theory">
+    <div class="block-head">
+      <span class="stepno">수업 노트</span>
+      <h2>향기 시장에 부는 새로운 향, Scent-Tech</h2>
+      <p class="muted">향료를 조합·가공한 제품과 서비스 시장은 팬데믹 이후 크게 늘었고, 이제 디지털 기술과 만나 의료·모빌리티·영상까지 넓어지고 있어요.</p>
+    </div>
+    <div class="tech">
+      <div><b>디지털 조향</b><span>Symrise와 IBM의 AI ‘필라라(Philyra)’가 만든 향수가 오보치카리오를 통해 출시</span></div>
+      <div><b>조향 효율화</b><span>Givaudan은 조향 시스템 Carto에 AI를 접목해 짧은 시간에 다양한 향수 제작</span></div>
+      <div><b>IoT 향기 제어</b><span>스마트폰 앱으로 발향 시간과 종류를 원격 제어하는 스마트 디퓨저</span></div>
+      <div><b>향기 나는 영상</b><span>Aromajoin(일본)은 잔향 없는 향 제어 장치와 영상에 향을 입히는 소프트웨어 개발</span></div>
+      <div><b>디지털 센트 케어</b><span>Inhalio(미국)의 차량용 지능형 디퓨저: 악취 제거, 기분 개선, 멀미 완화</span></div>
+      <div><b>AI 조향사 센트리아</b><span>예술작품과 내 이야기로 AI와 레시피를 만들고, 전문 조향사가 제조</span></div>
+    </div>
+
+    <div class="two">
+      <div>
+        <h3>발향 단계 (노트 피라미드)</h3>
+        <div class="pyramid">
+          <div class="tier t"><strong>탑 노트<small>~10분</small></strong><span>향의 첫인상 · 시트러스, 프루티, 그린</span></div>
+          <div class="tier m"><strong>미들 노트<small>30분~1시간</small></strong><span>향의 심장부 · 플로럴, 허벌, 민티, 아로마틱</span></div>
+          <div class="tier b"><strong>베이스 노트<small>2시간 이후</small></strong><span>잔향 · 머스크, 엠버, 우디, 발삼</span></div>
+        </div>
+      </div>
+      <div>
+        <h3>프롬프트 공식</h3>
+        <div class="formula"><span>역할</span><i>→</i><span>대상·상황</span><i>→</i><span>원하는 내용</span><i>→</i><span>답변 형식</span></div>
+        <ol class="tips">
+          <li>AI에게 역할 부여하기</li>
+          <li>나의 목표 알려주기</li>
+          <li>구체적인 답변 방법 제시</li>
+          <li>결과 형식 지정 (표, 글머리표)</li>
+          <li>여러 작업 한 번에 요청</li>
+          <li>답변 길이 제시 (1000자 이내)</li>
+          <li>핵심 키워드는 "큰따옴표"로</li>
+          <li>답변에 이어서 추가 질문</li>
+        </ol>
+      </div>
+    </div>
+    <div class="btns">
+      <a class="btn primary" href="https://gemini.google.com/app" target="_blank" rel="noopener">Gemini 열기 ↗</a>
+      <a class="btn ghost" href="https://chatgpt.com/" target="_blank" rel="noopener">ChatGPT 열기 ↗</a>
+    </div>
+  </section>
+
+  <!-- STEP 1 -->
+  <section class="block" id="step1">
+    <div class="block-head">
+      <span class="stepno">STEP 01</span>
+      <h2>나의 시그니처 향수 파악하기</h2>
+      <p class="muted">시향지로 6가지 향료를 맡아 보고, 노트마다 하나씩 골라 주세요. <span style="color:var(--sea)">추천</span> 표시는 그 노트에 잘 어울리는 향료예요.</p>
+    </div>
+    <div class="layers" id="layers"></div>
+    <label class="field">내가 생각하는 나의 향수 컨셉 <small>한 문장으로 적어 보세요. 예: 부드러운 느낌을 가진 나</small>
+      <input type="text" id="concept" data-key="concept">
+    </label>
+  </section>
+
+  <!-- STEP 2 -->
+  <section class="block" id="step2">
+    <div class="block-head">
+      <span class="stepno">STEP 02</span>
+      <h2>나의 시그니처 향수 컨셉 설정</h2>
+      <p class="muted">1단계 선택이 프롬프트에 자동으로 들어갑니다. 복사해서 Gemini에 붙여넣고, 제안된 컨셉 중 마음에 드는 1~2가지를 골라 적어 주세요.</p>
+    </div>
+    <div class="prompt">
+      <div class="prompt-head"><h3>AI 조향사에게 조언 구하기</h3><div class="btns"><button class="btn primary" type="button" data-copy="p2">프롬프트 복사</button><a class="btn ghost" href="https://gemini.google.com/app" target="_blank" rel="noopener">Gemini ↗</a></div></div>
+      <textarea id="p2" readonly aria-label="2단계 프롬프트"></textarea>
+    </div>
+    <label class="field">Gemini 답변 붙여넣기 <small>나중에 다시 볼 수 있게 저장돼요 (선택)</small>
+      <textarea id="ans2" data-key="ans2" placeholder="Gemini가 알려준 올팩티브 하모니와 브랜드 컨셉 3가지를 붙여넣으세요."></textarea>
+    </label>
+    <div class="two">
+      <label class="field">선택한 특징 1 <input type="text" id="feat1" data-key="feat1"></label>
+      <label class="field">선택한 특징 2 <input type="text" id="feat2" data-key="feat2"></label>
+    </div>
+  </section>
+
+  <!-- STEP 3 -->
+  <section class="block" id="step3">
+    <div class="block-head">
+      <span class="stepno">STEP 03</span>
+      <h2>노트(향) 설정과 10ml 레시피</h2>
+      <p class="muted">향료와 컨셉이 자동 입력된 프롬프트로 레시피를 받고, 아래 계산기로 실제 넣을 양을 확인하세요.</p>
+    </div>
+    <div class="prompt">
+      <div class="prompt-head"><h3>상세 레시피(10ml) 생성 요청</h3><div class="btns"><button class="btn primary" type="button" data-copy="p3">프롬프트 복사</button><a class="btn ghost" href="https://gemini.google.com/app" target="_blank" rel="noopener">Gemini ↗</a></div></div>
+      <textarea id="p3" readonly aria-label="3단계 프롬프트"></textarea>
+    </div>
+
+    <div class="calc" id="calc">
+      <h3>10ml 조향 계산기</h3>
+      <p class="note-box">실습용 향료는 <b>향료 20 : 베이스 80</b>으로 이미 블렌딩되어 있어요. 그래서 비율대로 바로 섞으면 됩니다. 1ml는 스포이트로 약 20방울이에요.</p>
+      <div id="calcRows"></div>
+      <div class="calc-sum" id="calcSum"></div>
+    </div>
+
+    <label class="field">Gemini 레시피 표 붙여넣기 <small>마크다운 표(| 로 구분된 줄)를 붙여넣으면 아래에 표로 보여 줘요</small>
+      <textarea id="ans3" data-key="ans3" placeholder="| 향료 이름 | 비율(%) | 실제 ml 양 | 특징 및 역할 |"></textarea>
+    </label>
+    <div class="table-wrap" id="recipeTable" hidden></div>
+  </section>
+
+  <!-- STEP 4 -->
+  <section class="block" id="step4">
+    <div class="block-head">
+      <span class="stepno">STEP 04</span>
+      <h2>나의 시그니처 향수 이름 짓기</h2>
+      <p class="muted">레시피와 특징에 어울리는 이름 5개를 추천받고, 하나를 골라 이름과 뜻을 적어 주세요.</p>
+    </div>
+    <div class="prompt">
+      <div class="prompt-head"><h3>향수 이름 추천 요청</h3><div class="btns"><button class="btn primary" type="button" data-copy="p4">프롬프트 복사</button><a class="btn ghost" href="https://gemini.google.com/app" target="_blank" rel="noopener">Gemini ↗</a></div></div>
+      <textarea id="p4" readonly aria-label="4단계 프롬프트"></textarea>
+    </div>
+    <div class="two">
+      <label class="field">향수 이름 <input type="text" id="pname" data-key="pname"></label>
+      <label class="field">이름의 뜻 <input type="text" id="pmean" data-key="pmean"></label>
+    </div>
+  </section>
+
+  <!-- STEP 5 -->
+  <section class="block" id="step5">
+    <div class="block-head">
+      <span class="stepno">STEP 05</span>
+      <h2>제품 출시용 SNS 홍보글과 이미지</h2>
+      <p class="muted">예시 문구를 함께 주는 <b>퓨샷 러닝(Few-shot)</b> 방식으로 홍보글을 요청합니다. 부산의 장소를 골라 제품 이미지 프롬프트도 만들어 보세요.</p>
+    </div>
+    <div class="two">
+      <label class="field">마케팅 문구 예시 1 <input type="text" id="shot1" data-key="shot1"></label>
+      <label class="field">마케팅 문구 예시 2 <input type="text" id="shot2" data-key="shot2"></label>
+    </div>
+    <div class="prompt">
+      <div class="prompt-head"><h3>SNS 홍보글 요청</h3><div class="btns"><button class="btn primary" type="button" data-copy="p5">프롬프트 복사</button><a class="btn ghost" href="https://gemini.google.com/app" target="_blank" rel="noopener">Gemini ↗</a></div></div>
+      <textarea id="p5" readonly aria-label="5단계 홍보글 프롬프트"></textarea>
+    </div>
+    <label class="field">완성한 홍보글 <small>마음에 드는 버전을 붙여넣고 다듬어 보세요</small>
+      <textarea id="ans5" data-key="ans5"></textarea>
+    </label>
+
+    <h3>부산 배경 제품 이미지</h3>
+    <div class="places" id="places"></div>
+    <label class="field">이미지 스타일
+      <select id="style" data-key="style">
+        <option value="고급스러운 향수 광고 사진, 자연광, 얕은 심도">광고 사진</option>
+        <option value="부드러운 수채화 일러스트, 따뜻한 색감">수채화 일러스트</option>
+        <option value="미니멀한 제품 사진, 넓은 여백, 파스텔 톤">미니멀</option>
+        <option value="필름 카메라 감성 사진, 은은한 그레인">필름 감성</option>
+      </select>
+    </label>
+    <div class="prompt">
+      <div class="prompt-head"><h3>이미지 생성 프롬프트</h3><div class="btns"><button class="btn primary" type="button" data-copy="p6">프롬프트 복사</button><a class="btn ghost" href="https://gemini.google.com/app" target="_blank" rel="noopener">Gemini ↗</a></div></div>
+      <textarea id="p6" readonly aria-label="5단계 이미지 프롬프트" style="min-height:120px"></textarea>
+    </div>
+  </section>
+
+  <!-- FINAL -->
+  <section class="block" id="final">
+    <div class="block-head">
+      <span class="stepno">완성</span>
+      <h2>나의 향수 라벨</h2>
+      <p class="muted">지금까지 입력한 내용으로 라벨이 만들어져요. 결과 요약을 복사해서 수업 공유 게시판에 올려 주세요.</p>
+    </div>
+    <div class="label-card" id="labelCard"></div>
+    <div class="btns" style="justify-content:center">
+      <button class="btn primary" type="button" id="copySummary">결과 요약 복사</button>
+    </div>
+    <textarea id="summary" readonly aria-label="결과 요약" style="min-height:200px"></textarea>
+  </section>
+</main>
+
+<footer class="wrap">생성형 AI를 활용해 만드는 나만의 향수와 브랜딩 · 입력 내용은 이 브라우저에만 저장됩니다.</footer>
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+<script>
+(function () {
+  var NOTES = [
+    { id: "citrus",  ko: "시트러스", en: "Citrus",        desc: "시원하고 산뜻한 감귤류, 휘발성이 좋음", rec: "top" },
+    { id: "fruity",  ko: "프루티",   en: "Fruity",        desc: "달콤하고 발랄한 과일 향", rec: "top" },
+    { id: "bouquet", ko: "부케",     en: "Bouquet",       desc: "어떤 타입에도 어울리는 은은한 플로럴", rec: "mid" },
+    { id: "soap",    ko: "솝",       en: "Soap",          desc: "방금 씻고 나온 듯한 은은한 비누 향", rec: "mid" },
+    { id: "musk",    ko: "머스크",   en: "Musk",          desc: "따뜻하고 파우더리한 느낌", rec: "base" },
+    { id: "vanilla", ko: "바닐라 엠버", en: "Vanilla Amber", desc: "라떼 같은 달콤하고 부드러운 오리엔탈", rec: "base" }
+  ];
+  var LAYERS = [
+    { id: "top",  name: "탑 노트",   time: "첫인상 · ~10분" },
+    { id: "mid",  name: "미들 노트", time: "심장부 · 30분~1시간" },
+    { id: "base", name: "베이스 노트", time: "잔향 · 2시간 이후" }
+  ];
+  var PLACES = [
+    { id: "gamcheon", name: "감천문화마을", scene: "알록달록한 계단식 집들이 펼쳐진 감천문화마을 언덕" },
+    { id: "dadaepo",  name: "다대포",       scene: "노을이 물든 다대포 해변의 넓은 모래사장과 물비늘" },
+    { id: "beomeosa", name: "범어사",       scene: "고즈넉한 범어사 산사의 돌계단과 단청, 초록 숲" },
+    { id: "jeonpo",   name: "전포카페거리", scene: "햇살이 드는 전포카페거리의 감성 카페 창가" },
+    { id: "haeundae", name: "해운대",       scene: "푸른 해운대 바다와 하얀 파도가 보이는 해변" },
+    { id: "gwangan",  name: "광안대교",     scene: "반짝이는 광안대교 야경이 비치는 밤바다" }
+  ];
+  var EXAMPLE = {
+    top: "fruity", mid: "bouquet", base: "musk",
+    concept: "부드러운 느낌을 가진 나",
+    ans2: "", feat1: "달콤한 살결의 온기", feat2: "느리게 흐르는 시간",
+    pct: { top: 30, mid: 40, base: 30 },
+    ans3: "", pname: "세렌 블룸 (Serene Bloom)",
+    pmean: "‘Serene’은 평화롭고 고요한 상태, ‘Bloom’은 꽃이 피어나는 과정. 조용한 위로와 싱그러운 플로럴이 공간을 편안하게 채운다는 뜻",
+    shot1: "나만의 공간에 향기를 더하다", shot2: "향이 선사하는 감성",
+    ans5: "", place: "gamcheon", style: "고급스러운 향수 광고 사진, 자연광, 얕은 심도"
+  };
+  var EMPTY = {
+    top: "", mid: "", base: "", concept: "", ans2: "", feat1: "", feat2: "",
+    pct: { top: 30, mid: 40, base: 30 }, ans3: "", pname: "", pmean: "",
+    shot1: "나만의 공간에 향기를 더하다", shot2: "향이 선사하는 감성",
+    ans5: "", place: "gamcheon", style: EXAMPLE.style
+  };
+  var KEY = "busan-perfume-lab-v1";
+  var state = load();
+
+  function clone(o) { return JSON.parse(JSON.stringify(o)); }
+  function load() {
+    try {
+      var raw = localStorage.getItem(KEY);
+      if (raw) { var s = JSON.parse(raw); return Object.assign(clone(EXAMPLE), s, { pct: Object.assign({}, EXAMPLE.pct, s.pct || {}) }); }
+    } catch (e) {}
+    return clone(EXAMPLE);
+  }
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} }
+  function $(id) { return document.getElementById(id); }
+  function note(id) { for (var i = 0; i < NOTES.length; i++) if (NOTES[i].id === id) return NOTES[i]; return null; }
+  function noteLabel(id, fallback) { var n = note(id); return n ? n.ko + "(" + n.en + ")" : fallback; }
+  function place(id) { for (var i = 0; i < PLACES.length; i++) if (PLACES[i].id === id) return PLACES[i]; return PLACES[0]; }
+  function or(v, f) { return v && String(v).trim() ? String(v).trim() : f; }
+  function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
+  function ml(p) { return Math.round(p) / 10; }
+
+  /* ---------- Step 1: chips ---------- */
+  function renderLayers() {
+    var html = LAYERS.map(function (L) {
+      var chips = NOTES.map(function (n) {
+        return '<button type="button" class="chip" data-layer="' + L.id + '" data-note="' + n.id + '" aria-pressed="' + (state[L.id] === n.id) + '">' +
+          '<b>' + n.ko + ' <small class="muted">' + n.en + '</small></b><span>' + n.desc + '</span>' +
+          (n.rec === L.id ? '<span class="rec">추천</span>' : '') + '</button>';
+      }).join("");
+      return '<div class="layer" data-layer="' + L.id + '"><div class="layer-label">' + L.name + ' <small>' + L.time + '</small></div><div class="chips" role="group" aria-label="' + L.name + '">' + chips + '</div></div>';
+    }).join("");
+    $("layers").innerHTML = html;
+  }
+  $("layers").addEventListener("click", function (e) {
+    var b = e.target.closest(".chip"); if (!b) return;
+    var L = b.getAttribute("data-layer"), n = b.getAttribute("data-note");
+    state[L] = state[L] === n ? "" : n;
+    $("layers").querySelectorAll('.chip[data-layer="' + L + '"]').forEach(function (c) {
+      c.setAttribute("aria-pressed", String(state[L] === c.getAttribute("data-note")));
+    });
+    update();
+  });
+
+  /* ---------- Step 3: calculator ---------- */
+  function renderCalc() {
+    $("calcRows").innerHTML = LAYERS.map(function (L) {
+      return '<div class="calc-row" data-l="' + L.id + '"><div class="name">' + L.name + '<small id="cn-' + L.id + '"></small></div>' +
+        '<input type="range" min="0" max="100" step="5" id="pct-' + L.id + '" aria-label="' + L.name + ' 비율">' +
+        '<span class="mono" id="pv-' + L.id + '"></span><span class="mono ml" id="ml-' + L.id + '"></span></div>';
+    }).join("");
+    LAYERS.forEach(function (L) {
+      var r = $("pct-" + L.id); r.value = state.pct[L.id];
+      r.addEventListener("input", function () { state.pct[L.id] = Number(r.value); update(); });
+    });
+  }
+  function updateCalc() {
+    var sum = 0;
+    LAYERS.forEach(function (L) {
+      var p = state.pct[L.id]; sum += p;
+      $("cn-" + L.id).textContent = noteLabel(state[L.id], "향료 미선택");
+      $("pv-" + L.id).textContent = p + "%";
+      $("ml-" + L.id).textContent = ml(p).toFixed(1) + "ml · 약 " + Math.round(ml(p) * 20) + "방울";
+    });
+    var status = sum === 100 ? '<span class="good">합계 100% · 10.0ml</span>' : '<span class="warn">합계 ' + sum + '% · 100%가 되도록 맞춰 주세요</span>';
+    $("calcSum").innerHTML = status + '<span class="muted">향료 원액 ' + (ml(sum) * 0.2).toFixed(1) + 'ml + 베이스 ' + (ml(sum) * 0.8).toFixed(1) + 'ml (부향률 20%)</span>';
+  }
+
+  /* ---------- Markdown table ---------- */
+  function renderTable() {
+    var lines = (state.ans3 || "").split(/\r?\n/).map(function (l) { return l.trim(); }).filter(function (l) { return l.charAt(0) === "|"; });
+    var rows = lines.filter(function (l) { return !/^\|[\s:|-]+\|?$/.test(l); }).map(function (l) {
+      return l.replace(/^\|/, "").replace(/\|$/, "").split("|").map(function (c) { return c.trim().replace(/\*\*/g, ""); });
+    });
+    var box = $("recipeTable");
+    if (rows.length < 2) { box.hidden = true; box.innerHTML = ""; return; }
+    var head = rows[0], body = rows.slice(1);
+    box.innerHTML = "<table><thead><tr>" + head.map(function (h) { return "<th>" + esc(h) + "</th>"; }).join("") + "</tr></thead><tbody>" +
+      body.map(function (r) { return "<tr>" + r.map(function (c) { return "<td>" + esc(c) + "</td>"; }).join("") + "</tr>"; }).join("") + "</tbody></table>";
+    box.hidden = false;
+  }
+
+  /* ---------- Places ---------- */
+  function renderPlaces() {
+    $("places").innerHTML = PLACES.map(function (p) {
+      return '<button type="button" class="chip" data-place="' + p.id + '" aria-pressed="' + (state.place === p.id) + '"><b>' + p.name + '</b></button>';
+    }).join("");
+  }
+  $("places").addEventListener("click", function (e) {
+    var b = e.target.closest(".chip"); if (!b) return;
+    state.place = b.getAttribute("data-place");
+    $("places").querySelectorAll(".chip").forEach(function (c) { c.setAttribute("aria-pressed", String(c.getAttribute("data-place") === state.place)); });
+    update();
+  });
+
+  /* ---------- Prompts ---------- */
+  function prompts() {
+    var top = noteLabel(state.top, "[탑 노트]"), mid = noteLabel(state.mid, "[미들 노트]"), base = noteLabel(state.base, "[베이스 노트]");
+    var concept = or(state.concept, "[나의 향수 컨셉]");
+    var f1 = or(state.feat1, "[특징 1]"), f2 = or(state.feat2, "[특징 2]");
+    var name = or(state.pname, "[향수 이름]"), mean = or(state.pmean, "[이름의 뜻]");
+    var p = place(state.place);
+    var pctLine = LAYERS.map(function (L) { return noteLabel(state[L.id], L.name) + " " + state.pct[L.id] + "%"; }).join(", ");
+
+    var p2 = "당신은 전문 조향사입니다.\n\n" +
+      "탑 노트: " + top + "\n미들 노트: " + mid + "\n베이스 노트: " + base + "\n\n" +
+      "위와 같은 노트를 구성해서 나의 시그니처 향수를 제작하려고 합니다.\n" +
+      "제가 생각하는 향수의 컨셉은 \"" + concept + "\" 입니다.\n\n" +
+      "전문 조향사의 관점에서 위 향료들이 조화롭게 어우러졌을 때 느껴지는 전체적인 향의 이미지와 올팩티브(Olfactive) 하모니에 대해 설명해 주세요.\n" +
+      "또한, 이 향료들의 혼합이 설정한 컨셉을 가장 잘 투영할 수 있도록 브랜드의 핵심 컨셉 3가지를 간결하고 임팩트 있게 제안해 주세요.";
+
+    var p3 = "나만의 시그니처 향수의 주요 노트(향료) 레시피를 아래 특징과 선택한 향료를 참고해서 포뮬러를 작성해줘.\n\n" +
+      "[데이터 참고]\n- 선택한 향료: " + [top, mid, base].join(", ") + "\n- 향수 특징 1: " + f1 + "\n- 향수 특징 2: " + f2 + "\n\n" +
+      "[요청 사항]\n1. 시그니처 향수의 레시피를 '완제품 10ml' 기준으로 [향료 이름, 비율(%), 실제 ml 양, 향료의 특징 및 역할]을 포함한 표로 작성해줘.\n" +
+      "2. 내가 구입한 제품은 향료와 베이스가 20:80으로 이미 블렌딩된 상태이므로, 이를 감안하여 사용자가 10ml를 조향할 때 넣어야 할 실제 ml 양을 계산해줘.\n" +
+      "3. 결과는 나중에 붙여넣기 쉽도록 마크다운 표 형식으로 작성해줘.";
+
+    var p4 = "당신은 향수 브랜드 네이밍 전문가입니다.\n\n" +
+      "[나의 레시피]\n" + pctLine + " (완제품 10ml)\n\n" +
+      "위 레시피와 \"" + f1 + "\", \"" + f2 + "\" 특징, 그리고 \"" + concept + "\"라는 컨셉에 어울리는 나의 시그니처 향수의 이름과 뜻을 5개 정도 추천해줘.\n" +
+      "[이름(한글), 영문 표기, 이름의 뜻]을 포함한 표로 정리해줘.";
+
+    var p5 = "당신은 향수 브랜드 마케터입니다.\n나의 시그니처 향수에 대한 마케팅 문구와 인스타그램 홍보 게시글을 작성해줘.\n\n" +
+      "제품 이름: " + name + "\n제품 뜻: " + mean + "\n향 구성: " + [top, mid, base].join(" → ") + "\n향수 특징: " + f1 + ", " + f2 + "\n" +
+      "부산의 장소: " + p.name + " (게시글에 이 장소의 분위기를 자연스럽게 녹여줘)\n\n" +
+      "마케팅 문구 예:\n- \"" + or(state.shot1, "나만의 공간에 향기를 더하다") + "\"\n- \"" + or(state.shot2, "향이 선사하는 감성") + "\"\n\n" +
+      "[요청 사항]\n1. 위 예시와 같은 톤의 마케팅 문구 3개\n2. 이모지를 포함한 인스타그램 게시글 1개 (500자 이내)\n3. 해시태그 10개 (#부산 포함)";
+
+    var p6 = p.scene + "을 배경으로 놓인 향수병 제품 이미지를 만들어줘.\n" +
+      "향수병 라벨에는 \"" + name.replace(/\s*\(.*\)\s*/, "") + "\"이라는 이름이 적혀 있어.\n" +
+      "향의 느낌: " + f1 + ", " + f2 + " / " + [top, mid, base].join(", ") + "\n" +
+      "스타일: " + (state.style || EXAMPLE.style) + ", 세로 4:5 비율, 인스타그램 게시용";
+    return { p2: p2, p3: p3, p4: p4, p5: p5, p6: p6 };
+  }
+
+  /* ---------- Final label + summary ---------- */
+  function updateFinal() {
+    var name = or(state.pname, "나의 향수");
+    var rows = LAYERS.map(function (L) {
+      var n = note(state[L.id]);
+      return '<div><span style="color:var(--' + L.id + ')">' + L.id.toUpperCase() + '</span><span>' + (n ? esc(n.ko) : "—") + ' <span class="mono muted">' + ml(state.pct[L.id]).toFixed(1) + 'ml</span></span></div>';
+    }).join("");
+    $("labelCard").innerHTML = '<span class="city">BUSAN · ' + esc(place(state.place).name) + '</span>' +
+      '<div class="pname">' + esc(name) + '</div>' +
+      (state.pmean ? '<p class="pmean">' + esc(state.pmean) + '</p>' : '') +
+      '<hr><div class="notes">' + rows + '</div><hr>' +
+      '<p class="pmean">' + esc(or(state.concept, "")) + (state.feat1 || state.feat2 ? "<br>" + esc([state.feat1, state.feat2].filter(Boolean).join(" · ")) : "") + '</p>' +
+      '<span class="vol">EAU DE PARFUM · 10 ml</span>';
+
+    var s = "■ 향수 이름: " + name + (state.pmean ? "\n■ 뜻: " + state.pmean : "") +
+      "\n■ 컨셉: " + or(state.concept, "-") + "\n■ 특징: " + [state.feat1, state.feat2].filter(Boolean).join(", ") +
+      "\n■ 레시피(10ml): " + LAYERS.map(function (L) { return L.name + " " + noteLabel(state[L.id], "-") + " " + state.pct[L.id] + "% (" + ml(state.pct[L.id]).toFixed(1) + "ml)"; }).join(" / ") +
+      "\n■ 부산 배경: " + place(state.place).name +
+      (state.ans5 ? "\n\n" + state.ans5.trim() : "");
+    $("summary").value = s;
+  }
+
+  /* ---------- Progress ---------- */
+  function updateNav() {
+    var sumOk = state.pct.top + state.pct.mid + state.pct.base === 100;
+    var done = {
+      1: !!(state.top && state.mid && state.base && state.concept.trim()),
+      2: !!(state.feat1.trim() && state.feat2.trim()),
+      3: sumOk,
+      4: !!state.pname.trim(),
+      5: !!state.ans5.trim()
+    };
+    done[6] = done[1] && done[2] && done[3] && done[4] && done[5];
+    document.querySelectorAll("#stepNav a[data-step]").forEach(function (a) {
+      a.classList.toggle("done", !!done[a.getAttribute("data-step")]);
+    });
+  }
+
+  function update() {
+    var P = prompts();
+    Object.keys(P).forEach(function (k) { $(k).value = P[k]; });
+    updateCalc(); renderTable(); updateFinal(); updateNav(); save();
+  }
+
+  /* ---------- Fields ---------- */
+  function bindFields() {
+    document.querySelectorAll("[data-key]").forEach(function (el) {
+      var k = el.getAttribute("data-key");
+      el.value = state[k] || "";
+      el.addEventListener("input", function () { state[k] = el.value; update(); });
+    });
+  }
+
+  /* ---------- Copy ---------- */
+  var toastTimer;
+  function toast(msg) {
+    var t = $("toast"); t.textContent = msg; t.hidden = false;
+    clearTimeout(toastTimer); toastTimer = setTimeout(function () { t.hidden = true; }, 1800);
+  }
+  function copyFrom(el, msg) {
+    var text = el.value;
+    function fallback() { el.focus(); el.select(); toast("텍스트를 선택했어요. Ctrl+C(⌘+C)로 복사하세요"); }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(function () { toast(msg); }, fallback);
+    } else { fallback(); }
+  }
+  document.addEventListener("click", function (e) {
+    var b = e.target.closest("[data-copy]"); if (!b) return;
+    copyFrom($(b.getAttribute("data-copy")), "프롬프트를 복사했어요. Gemini에 붙여넣으세요");
+  });
+  $("copySummary").addEventListener("click", function () { copyFrom($("summary"), "결과 요약을 복사했어요"); });
+
+  /* ---------- Reset (in-page confirm) ---------- */
+  var resetHTML = $("resetArea").innerHTML;
+  $("resetArea").addEventListener("click", function (e) {
+    var id = e.target.id;
+    if (id === "resetBtn") {
+      $("resetArea").innerHTML = '<span>입력한 내용이 모두 지워집니다.</span><button class="btn danger" type="button" id="resetYes">비우기</button><button class="btn ghost" type="button" id="resetNo">취소</button>';
+    } else if (id === "resetYes" || id === "loadExample") {
+      state = clone(id === "resetYes" ? EMPTY : EXAMPLE);
+      init();
+      $("exampleMsg").textContent = id === "resetYes" ? "새 작업지를 시작했어요. 1단계부터 차례로 채워 보세요." : "수업 예시를 다시 불러왔어요.";
+      $("resetArea").innerHTML = id === "resetYes" ? '<button class="btn ghost" type="button" id="loadExample">수업 예시 불러오기</button>' : resetHTML;
+      toast(id === "resetYes" ? "모두 비웠어요" : "예시를 불러왔어요");
+    } else if (id === "resetNo") {
+      $("resetArea").innerHTML = resetHTML;
+    }
+  });
+
+  function init() {
+    renderLayers(); renderCalc(); renderPlaces();
+    document.querySelectorAll("[data-key]").forEach(function (el) { el.value = state[el.getAttribute("data-key")] || ""; });
+    update();
+  }
+  bindFields();
+  init();
+})();
+</script>
+</body>
+</html>
