@@ -64,11 +64,27 @@ blob = json.dumps(out, ensure_ascii=False).replace("</", "<\\/")
 page = re.sub(r"/\*FILES_START\*/.*?/\*FILES_END\*/", lambda m: f"/*FILES_START*/{blob}/*FILES_END*/", page, flags=re.S)
 PAGE.write_text(page, encoding="utf-8")
 
+def og_tags(title, desc, path):
+    """링크를 붙여 넣으면 메신저·SNS가 보여 주는 미리보기 카드(Open Graph)."""
+    base = "https://beatclass.vercel.app"
+    return (f'<meta name="description" content="{desc}">\n'
+            f'<meta property="og:type" content="website">\n'
+            f'<meta property="og:site_name" content="BeAT 실습실">\n'
+            f'<meta property="og:title" content="{title}">\n'
+            f'<meta property="og:description" content="{desc}">\n'
+            f'<meta property="og:url" content="{base}{path}">\n'
+            f'<meta property="og:image" content="{base}/og-image.jpg">\n'
+            f'<meta property="og:image:width" content="1200">\n'
+            f'<meta property="og:image:height" content="630">\n'
+            f'<meta property="og:locale" content="ko_KR">\n'
+            f'<meta name="twitter:card" content="summary_large_image">\n')
+
 # 단독 실행본: 아티팩트가 씌우는 문서 뼈대를 직접 붙인다
 head, body = page.split("</style>\n", 1)
 (ROOT / "index.html").write_text(
     '<!doctype html>\n<html lang="ko">\n<head>\n<meta charset="utf-8">\n'
     '<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">\n'
+    + og_tags("BeAT(비트) 실습실", "부산교육 AI 튜터 BeAT 1차시 실습 사이트: 윤리 퀴즈, 안전 약속, 접속, 질문 만들기, 메뉴별 공부 실습과 실습 자료", "/")
     + head.replace("<style>", "<style>\nbody { margin: 0; }", 1) + "</style>\n</head>\n<body>\n"
     + body + "</body>\n</html>\n", encoding="utf-8")
 print("embedded", len(out), "files;", f"page {len(page) // 1024}KB")

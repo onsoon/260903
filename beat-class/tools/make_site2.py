@@ -451,15 +451,32 @@ R("[BeAT 1차시 돌아보기]", "[BeAT 활용 교육 돌아보기]")
 
 (ROOT / "practice-site2.html").write_text(page, encoding="utf-8")
 
+DESC = "부산교육 AI 튜터 BeAT 학생 실습: 회원가입, 윤리 퀴즈, 질문 만들기, 약속 그림, 진로 탐색, 나만의 AI Agent, 교육 이수증"
+def og_tags(title, desc, path):
+    """링크를 붙여 넣으면 메신저·SNS가 보여 주는 미리보기 카드(Open Graph)."""
+    base = "https://beatclass.vercel.app"
+    return (f'<meta name="description" content="{desc}">\n'
+            f'<meta property="og:type" content="website">\n'
+            f'<meta property="og:site_name" content="BeAT 실습실">\n'
+            f'<meta property="og:title" content="{title}">\n'
+            f'<meta property="og:description" content="{desc}">\n'
+            f'<meta property="og:url" content="{base}{path}">\n'
+            f'<meta property="og:image" content="{base}/og-image.jpg">\n'
+            f'<meta property="og:image:width" content="1200">\n'
+            f'<meta property="og:image:height" content="630">\n'
+            f'<meta property="og:locale" content="ko_KR">\n'
+            f'<meta name="twitter:card" content="summary_large_image">\n')
+
 # 단독 실행본: embed_files.py 와 같은 방식으로 문서 뼈대를 붙인다
 head, body = page.split("</style>\n", 1)
 (ROOT / "site2").mkdir(exist_ok=True)
 (ROOT / "site2" / "index.html").write_text(
     '<!doctype html>\n<html lang="ko">\n<head>\n<meta charset="utf-8">\n'
     '<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">\n'
+    + og_tags("BeAT(비트) 활용 교육 실습실", DESC, "/site2/")
     + head.replace("<style>", "<style>\nbody { margin: 0; }", 1) + "</style>\n</head>\n<body>\n"
     + body + "</body>\n</html>\n", encoding="utf-8")
 # 최종 슬라이드가 안내하는 주소(site3)에도 같은 사이트를 둔다. 기록 저장 키는 따로 쓴다
 (ROOT / "site3").mkdir(exist_ok=True)
-(ROOT / "site3" / "index.html").write_text((ROOT / "site2" / "index.html").read_text(encoding="utf-8").replace('"beat2:"', '"beat3:"'), encoding="utf-8")
+(ROOT / "site3" / "index.html").write_text((ROOT / "site2" / "index.html").read_text(encoding="utf-8").replace('"beat2:"', '"beat3:"').replace('content="https://beatclass.vercel.app/site2/"', 'content="https://beatclass.vercel.app/site3/"'), encoding="utf-8")
 print("practice-site2.html, site2/index.html, site3/index.html", len(page) // 1024, "KB")
